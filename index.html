@@ -119,22 +119,27 @@
                             placeholder="Search by name, subject, or course #" 
                             class="w-full p-1 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                         >
-                        <select 
-                            id="all-courses-filter" 
-                            class="w-full p-1 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                            <option value="">Filter by School/Core Tag...</option>
-                            <!-- Options populated by JavaScript -->
-                        </select>
-                        <div class="flex items-center justify-end">
-                            <input 
-                                type="checkbox" 
-                                id="show-reviewed-only" 
-                                class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-400"
+                        <!-- NEW: Wrapper for side-by-side filter controls -->
+                        <div class="flex items-center space-x-4">
+                            <!-- Checkbox (on the left) -->
+                            <div class="flex-shrink-0 flex items-center">
+                                <input 
+                                    type="checkbox" 
+                                    id="show-reviewed-only" 
+                                    class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-400"
+                                >
+                                <label for="show-reviewed-only" class="ml-2 text-sm font-medium text-gray-300">
+                                    Show only courses with reviews
+                                </label>
+                            </div>
+                            <!-- Filter (on the right, takes remaining space) -->
+                            <select 
+                                id="all-courses-filter" 
+                                class="w-full p-1 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                             >
-                            <label for="show-reviewed-only" class="ml-2 text-sm font-medium text-gray-300">
-                                Show only courses with reviews
-                            </label>
+                                <option value="">Filter by School/Core Tag...</option>
+                                <!-- Options populated by JavaScript -->
+                            </select>
                         </div>
                     </div>
                 </div>
