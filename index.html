@@ -78,12 +78,12 @@
                             <option value="difficulty">Sort by Easiest</option>
                             <option value="workload">Sort by Lightest Workload</option>
                         </select>
-                        <!-- NEW LEADERBOARD FILTER -->
+                        <!-- LEADERBOARD TAG/SCHOOL FILTER -->
                         <select id="leaderboard-filter" class="bg-gray-700 text-white text-sm rounded-md p-1 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 w-full">
                             <option value="">Filter All</option>
                             <!-- Options populated by JavaScript -->
                         </select>
-                        <!-- NEW LEADERBOARD SEARCH -->
+                        <!-- LEADERBOARD SEARCH -->
                         <input 
                             type="text" 
                             id="leaderboard-search" 
@@ -104,16 +104,21 @@
                     All Courses
                 </h2>
                 <!-- Search and Filter Controls -->
-                <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <input 
                         type="text" 
                         id="search-bar" 
                         placeholder="Search by name, subject, or course #" 
-                        class="w-full sm:w-2/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        class="col-span-full md:col-span-1 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
                     >
                     <!-- SCHOOL FILTER (General) -->
-                    <select id="school-filter" class="w-full sm:w-1/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <select id="school-filter" class="col-span-full md:col-span-1 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
                         <option value="">Filter by School...</option>
+                        <!-- Options populated by JavaScript -->
+                    </select>
+                    <!-- CORE TAG FILTER (NEW) -->
+                    <select id="core-tag-filter" class="col-span-full md:col-span-1 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="">Filter by Core Tag...</option>
                         <!-- Options populated by JavaScript -->
                     </select>
                 </div>
@@ -183,7 +188,6 @@
                 <!-- AI Summary Section (Pros & Cons) -->
                 <div>
                     <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">AI Summary (from reviews)</h3>
-                    <!-- HTML FIX: Added min-h-[100px] and new elements -->
                     <div id="ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px]">
                         <div id="ai-summary-loader" class="loader hidden mx-auto"></div>
                         <div id="ai-error-box" class="text-red-400 text-sm hidden"></div>
@@ -329,7 +333,6 @@
                  <!-- AI Summary Section (Pros & Cons) -->
                  <div>
                     <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">AI Summary (from reviews)</h3>
-                    <!-- HTML FIX: Added min-h-[100px] and new elements -->
                     <div id="leaderboard-ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px]">
                         <div id="leaderboard-ai-summary-loader" class="loader hidden mx-auto"></div>
                         <div id="leaderboard-ai-error-box" class="text-red-400 text-sm hidden"></div>
@@ -389,7 +392,7 @@
         let allReviews = {}; // Holds all review data from Firebase
         let auth, db, userId; // Firebase instances
         let authReady = false; // Flag to track auth state
-        let currentSchoolFilter = ""; // New global state for school filtering
+        let currentSchoolFilter = ""; // Global state for school filtering
 
         // --- GPA CONVERSION ---
         const gpaMap = {
@@ -413,14 +416,12 @@
             return "F";
         }
 
-        // --- SCHOOL DATA (FOR NEW TAG) ---
+        // --- SCHOOL DATA & TAG MAPPING ---
         const schoolData = [
-            // --- FIX: Renamed the school to "HASS" ---
             { "name": "HASS", "depts": [ { "code": "ARTS", "name": "Arts" }, { "code": "COGS", "name": "Cognitive Science" }, { "code": "COMM", "name": "Communication" }, { "code": "ECON", "name": "Economics" }, { "code": "GSAS", "name": "Games and Simulation Arts and Sciences" }, { "code": "IHSS", "name": "Interdisciplinary Humanities and Social Sciences" }, { "code": "INQR", "name": "HASS Inquiry" }, { "code": "LANG", "name": "Foreign Languages" }, { "code": "LITR", "name": "Literature" }, { "code": "PHIL", "name": "Philosophy" }, { "code": "PSYC", "name": "Psychology" }, { "code": "STSO", "name": "Science, Technology, and Society" }, { "code": "WRIT", "name": "Writing" } ] },
             { "name": "Interdisciplinary and Other", "depts": [ { "code": "ADMN", "name": "Administrative Courses" }, { "code": "USAF", "name": "Aerospace Studies (Air Force ROTC)" }, { "code": "USAR", "name": "Military Science (Army ROTC)" }, { "code": "USNA", "name": "Naval Science (Navy ROTC)" } ] },
             { "name": "Engineering", "depts": [ { "code": "BMED", "name": "Biomedical Engineering" }, { "code": "CHME", "name": "Chemical Engineering" }, { "code": "CIVL", "name": "Civil Engineering" }, { "code": "ECSE", "name": "Electrical, Computer, and Systems Engineering" }, { "code": "ENGR", "name": "General Engineering" }, { "code": "ENVE", "name": "Environmental Engineering" }, { "code": "ESCI", "name": "Engineering Science" }, { "code": "ISYE", "name": "Industrial and Systems Engineering" }, { "code": "MANE", "name": "Mechanical, Aerospace, and Nuclear Engineering" }, { "code": "MTLE", "name": "Materials Science and Engineering" } ] },
             { "name": "Architecture", "depts": [ { "code": "ARCH", "name": "Architecture" }, { "code": "LGHT", "name": "Lighting" } ] },
-            // --- FIX: Shortened "Information Technology and Web Science" to "ITWS" ---
             { "name": "ITWS", "depts": [ { "code": "ITWS", "name": "Information Technology and Web Science" } ] },
             { "name": "Science", "depts": [ { "code": "ASTR", "name": "Astronomy" }, { "code": "BCBP", "name": "Biochemistry and Biophysics" }, { "code": "BIOL", "name": "Biology" }, { "code": "CHEM", "name": "Chemistry" }, { "code": "CSCI", "name": "Computer Science" }, { "code": "ERTH", "name": "Earth and Environmental Science" }, { "code": "ISCI", "name": "Interdisciplinary Science" }, { "code": "MATH", "name": "Mathematics" }, { "code": "MATP", "name": "Mathematical Programming, Probability, and Statistics" }, { "code": "PHYS", "name": "Physics" } ] },
             { "name": "Management", "depts": [ { "code": "BUSN", "name": "Business (H)" }, { "code": "MGMT", "name": "Management" } ] },
@@ -435,24 +436,25 @@
             });
         });
 
-        // --- NEW: Map for specific required tags ---
+        // Map for specific required tags (HASS, SCIENCE, MATH)
         const specificTagsMap = new Map();
         // HASS Tag Codes
         ['ARTS', 'COGS', 'COMM', 'ECON', 'GSAS', 'IHSS', 'INQR', 'LANG', 'LITR', 'PHIL', 'PSYC', 'STSO', 'WRIT'].forEach(code => specificTagsMap.set(code, 'HASS'));
         // SCIENCE Tag Codes
         ['ASTR', 'BCBP', 'BIOL', 'CHEM', 'CSCI', 'ERTH', 'ISCI', 'PHYS'].forEach(code => specificTagsMap.set(code, 'SCIENCE'));
-        // MATH Tag Codes (as specified: MATH and MATP only)
+        // MATH Tag Codes (MATH and MATP only)
         ['MATH', 'MATP'].forEach(code => specificTagsMap.set(code, 'MATH'));
 
 
         /**
-         * Populates the School Filter dropdown with unique school names.
-         * NOTE: This also populates the Leaderboard filter with tags and schools.
+         * Populates the School Filter dropdowns.
          */
         function populateSchoolFilter() {
             const schoolFilterElement = document.getElementById('school-filter');
             const leaderboardFilterElement = document.getElementById('leaderboard-filter');
             if (!schoolFilterElement || !leaderboardFilterElement) return;
+
+            const coreTagFilterElement = document.getElementById('core-tag-filter');
 
             const schools = schoolData.map(s => s.name).sort();
             const tags = ['HASS', 'SCIENCE', 'MATH'];
@@ -462,6 +464,12 @@
                 `<option value="${school}">${school}</option>`
             ).join('');
             schoolFilterElement.innerHTML = `<option value="">Filter by School...</option>` + schoolOptionsHtml;
+
+            // Populate Core Tag Filter (NEW)
+            const coreTagOptionsHtml = tags.map(tag => 
+                `<option value="${tag}">${tag}</option>`
+            ).join('');
+            coreTagFilterElement.innerHTML = `<option value="">Filter by Core Tag...</option>` + coreTagOptionsHtml;
             
             // Populate Leaderboard Filter with Tags and Schools
             let leaderboardOptions = [`<option value="">Filter All</option>`];
@@ -484,8 +492,7 @@
         // --- CORE DATA & RENDERING LOGIC ---
 
         /**
-         * Loads all static course JSON files from the /resources/ folder.
-         * This is the first step on page load.
+         * Loads all static course JSON files and merges data.
          */
         async function loadCourseData() {
             try {
@@ -503,40 +510,32 @@
                 const springCatalog = await springResponse.json();
                 const prereqGraph = await prereqResponse.json();
                 
-                // Merge catalogs, Spring takes precedence
                 const mergedCatalog = { ...fallCatalog, ...springCatalog };
 
-                // Process the merged data into the 'allCourses' array
                 allCourses = Object.keys(mergedCatalog).map(id => {
                     const course = mergedCatalog[id];
                     
                     let prereqId = null;
-                    const cleanSubj = course.subj.trim().toUpperCase(); // Clean subject code for lookups
+                    const cleanSubj = course.subj.trim().toUpperCase();
 
-                    // Safely check and trim subj/crse before creating the key
                     if (course.subj && typeof course.subj === 'string' && course.crse && typeof course.crse === 'string') {
-                        prereqId = `${cleanSubj} ${course.crse.trim()}`; // e.g., "CSCI 1200"
+                        prereqId = `${cleanSubj} ${course.crse.trim()}`;
                     }
                     
-                    const prereqData = prereqId ? prereqGraph[prereqId] : null; // Look up "CSCI 1200" in prereqGraph
+                    const prereqData = prereqId ? prereqGraph[prereqId] : null;
                     const hasPrereqs = prereqData && prereqData.prereqs && prereqData.prereqs.length > 0;
 
                     let tags = [];
                     // 1. Prereq Tag
-                    if (hasPrereqs) {
-                        tags.push('Has Prereqs');
-                    } else {
-                        tags.push('No Prereqs');
-                    }
+                    tags.push(hasPrereqs ? 'Has Prereqs' : 'No Prereqs');
                     
-                    // --- NEW: Add HASS, SCIENCE, MATH tags if applicable ---
+                    // 2. Add HASS, SCIENCE, MATH tags if applicable
                     const specificTag = specificTagsMap.get(cleanSubj);
                     if (specificTag) {
                         tags.push(specificTag);
                     }
-                    // --- END NEW TAGGING ---
 
-                    // School Name (Stored separately for filtering)
+                    // School Name
                     const schoolName = subjectSchoolMap.get(cleanSubj);
                     
                     return {
@@ -546,8 +545,8 @@
                         crse: course.crse,
                         description: course.description || "No description available.",
                         prereqs: hasPrereqs ? prereqData.prereqs.join(', ') : 'None listed.',
-                        tags: tags, // Now contains Prereq tag + relevant specific tags
-                        school: schoolName || 'Uncategorized', // Store school name here
+                        tags: tags, 
+                        school: schoolName || 'Uncategorized',
                         // Initialize review data (will be populated by Firebase)
                         reviews: [],
                         reviewCount: 0,
@@ -556,7 +555,7 @@
                         avgWorkload: 0.0,
                         avgAttendance: 0,
                         avgGpa: -1,
-                        ai_summary: null, // This will store the {pros: [], cons: []} object
+                        ai_summary: null,
                     };
                 });
                 
@@ -567,15 +566,14 @@
                 document.getElementById('all-courses-list').innerHTML = `
                     <div class="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg">
                         <h3 class="font-bold">Error Loading Courses</h3>
-                        <p>Could not load course files from the /resources/ folder. Make sure fall_catalog.json, spring_catalog.json, and prereq_graph.json are present.</p>
+                        <p>Could not load course files from the /resources/ folder.</p>
                     </div>
                 `;
             }
         }
 
         /**
-         * Attaches the Firebase listener. This runs *after* auth is ready.
-         * It listens for changes to the "reviews" document.
+         * Attaches the Firebase listener for reviews.
          */
         function attachFirebaseListener() {
             if (!db || !authReady || !userId) {
@@ -591,11 +589,9 @@
                 if (doc.exists()) {
                     allReviews = doc.data();
                     console.log(`Firebase listener: Received ${Object.keys(allReviews).length} courses with reviews.`);
-                    // Once we have reviews, merge them into the static course list
                     mergeReviewsIntoCourses();
                 } else {
                     console.log("Firebase listener: 'all_course_reviews' document does not exist. A new one will be created on first review.");
-                    // No reviews yet, just render the static courses
                     mergeReviewsIntoCourses();
                 }
             }, (error) => {
@@ -608,7 +604,6 @@
 
         /**
          * Merges the latest data from `allReviews` (Firebase) into `allCourses` (static JSONs).
-         * Calculates new averages and re-renders the UI.
          */
         function mergeReviewsIntoCourses() {
             console.log("Merging Firebase reviews into course list...");
@@ -640,15 +635,11 @@
                     course.avgAttendance = (totalAttendance / course.reviewCount) * 100;
                     course.avgGpa = gpaCount > 0 ? (totalGpa / gpaCount) : -1;
 
-                    // --- FIX: Check if cached summary is a string (old format) or object (new format) ---
-                    // This is the aggressive check to ensure only the new JSON format is accepted.
+                    // --- CHECK FOR CORRUPT DATA (String or missing expected fields) ---
                     if (reviewData.ai_summary && (typeof reviewData.ai_summary === 'string' || !reviewData.ai_summary.pros || !reviewData.ai_summary.cons)) {
-                        // This is old or corrupt data. Force invalidation by setting local state to null.
                         course.ai_summary = null;
                         console.warn(`Old/Corrupt summary data found for ${course.id}. Cache invalidated. New JSON summary will be generated.`);
-                        
                     } else {
-                         // Load the cached summary object (if it's already the correct object format)
                         course.ai_summary = reviewData.ai_summary || null;
                     }
                 
@@ -668,13 +659,11 @@
             // Re-render everything with the new data
             const currentSearch = document.getElementById('search-bar').value;
             renderAllCourses(currentSearch);
-            // Re-render leaderboard using its current sort/filter settings
             renderLeaderboard(document.getElementById('leaderboard-sort').value);
         }
 
         /**
          * Renders the entire list of courses on the right side.
-         * @param {string} [filterText=""] - Optional text to filter the course list.
          */
         function renderAllCourses(filterText = "") {
             const listElement = document.getElementById('all-courses-list');
@@ -682,6 +671,7 @@
 
             const lowerFilter = filterText.toLowerCase().trim();
             const schoolFilterValue = document.getElementById('school-filter').value;
+            const coreTagFilterValue = document.getElementById('core-tag-filter').value;
             
             const filteredCourses = allCourses.filter(course => {
                 // 1. Search Bar Filter
@@ -689,10 +679,13 @@
                                                 course.id.toLowerCase().includes(lowerFilter) ||
                                                 course.subj.toLowerCase().includes(lowerFilter);
                 
-                // 2. School Filter (Main filter for All Courses list)
+                // 2. School Filter
                 const schoolMatch = !schoolFilterValue || course.school === schoolFilterValue;
 
-                return searchMatch && schoolMatch;
+                // 3. Core Tag Filter (NEW)
+                const coreTagMatch = !coreTagFilterValue || course.tags.includes(coreTagFilterValue);
+
+                return searchMatch && schoolMatch && coreTagMatch;
             });
 
             filteredCourses.sort((a, b) => {
@@ -707,10 +700,9 @@
             }
 
             listElement.innerHTML = filteredCourses.map(course => {
-                // --- FEATURE: Create HTML for all tags (Prereq + Specific tags) ---
+                // --- Create HTML for all tags (Prereq + Specific tags) ---
                 const tagsHtml = course.tags.map(tag => {
                     let color;
-                    // Define colors based on tag type
                     if (tag === 'No Prereqs') {
                         color = 'bg-green-800 text-green-200';
                     } else if (tag === 'Has Prereqs') {
@@ -760,7 +752,6 @@
 
         /**
          * Renders the top 10 courses on the leaderboard based on a sort key and filter.
-         * @param {string} [sortBy='usefulness'] - 'usefulness', 'difficulty', or 'workload'.
          */
         function renderLeaderboard(sortBy = 'usefulness') {
             const listElement = document.getElementById('leaderboard-list');
@@ -792,9 +783,8 @@
                         }
                     }
                     
-                    // 2. Search Input Filter (NEW)
+                    // 2. Search Input Filter
                     if (searchInput) {
-                        // Check if the course ID (e.g., CSCI-1200) or subject (e.g., CSCI) includes the search input
                         const courseCodeMatch = course.id.toLowerCase().includes(searchInput) ||
                                                 course.subj.toLowerCase().includes(searchInput);
                         if (!courseCodeMatch) return false;
@@ -957,8 +947,7 @@
         }
 
         /**
-         * Renders the list of individual reviews in a modal.
-         * --- FEATURE 1: Sorts reviews by newest first ---
+         * Renders the list of individual reviews in a modal (Newest First).
          */
         function renderReviewsList(reviews, elementId) {
             const listElement = document.getElementById(elementId);
@@ -996,7 +985,6 @@
 
         /**
          * Handles the submission of the review form.
-         * Writes the new review data to Firebase.
          */
         async function handleSubmitReview(event) {
             event.preventDefault();
@@ -1033,27 +1021,24 @@
                     }
                 }, { merge: true }); 
 
-                // --- STEP 2: Invalidate the cache (THE FIX) ---
-                // Use updateDoc with dot notation to set *only* ai_summary to null.
+                // --- STEP 2: Invalidate the cache ---
                 await updateDoc(docRef, {
                     [`${courseId}.ai_summary`]: null
                 });
-                // --- END OF FIX ---
 
                 console.log(`Review submitted for ${courseId}`);
                 closeReviewModal();
 
             } catch (error) {
                 console.error("Error submitting review:", error);
-                alert("There was an error submitting your review. Please try again.");
+                alert("There was an error submitting your review. Please try again."); 
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Submit Review";
             }
         }
 
         /**
-         * --- FEATURE 3 (JS FIX): Renders the Pros & Cons list ---
-         * Helper function to build and inject the Pros/Cons HTML.
+         * Renders the Pros & Cons list.
          */
         function renderProsCons(summaryObject, contentId, placeholderId, loaderId, errorId) {
             const contentElement = document.getElementById(contentId);
@@ -1106,12 +1091,9 @@
 
 
         /**
-         * --- JS FIX: Updated resetAISummary to be safer ---
-         * Resets the AI summary box to its initial state.
-         * NOW CHECKS FOR CACHE AND *AUTOMATICALLY* GENERATES IF MISSING.
+         * Resets the AI summary box to its initial state, checking cache and triggering generation.
          */
         function resetAISummary(course, containerId, loaderId, errorId) {
-            // --- NEW: Get IDs for the new content/placeholder elements ---
             const isReviewModal = (containerId === 'ai-summary-box');
             const contentId = isReviewModal ? 'ai-summary-content' : 'leaderboard-ai-summary-content';
             const placeholderId = isReviewModal ? 'ai-summary-placeholder' : 'leaderboard-ai-summary-placeholder';
@@ -1123,9 +1105,7 @@
             
             const hasReviews = course && course.reviews && course.reviews.length > 0;
 
-            // --- START OF MODIFICATION (Bug Fix) ---
-            
-            // Always start by clearing content and hiding all elements
+            // Always start by clearing content and hiding all utility elements
             contentElement.innerHTML = '';
             contentElement.classList.add('hidden');
             placeholderElement.classList.add('hidden');
@@ -1137,26 +1117,20 @@
                 renderProsCons(course.ai_summary, contentId, placeholderId, loaderId, errorId);
             
             } else if (hasReviews) {
-                // Case 2: No cached summary, BUT we have reviews.
-                // Auto-generate it for the user.
+                // Case 2: No cached summary, BUT we have reviews. Auto-generate.
                 loaderElement.classList.remove('hidden'); // Show loader
                 
-                // Call the function to do the work
                 generateSummary(course, contentId, placeholderId, loaderId, errorId);
 
             } else {
                 // Case 3: No reviews, no summary. Show placeholder.
-                // This is the fix: We now update the placeholder's text
-                // instead of destroying the other elements.
                 placeholderElement.textContent = "No reviews yet. Submit one to get an AI summary!";
                 placeholderElement.classList.remove('hidden');
             }
-            // --- END OF MODIFICATION ---
         }
 
         /**
-         * --- JS FIX: Added JSON parsing robustness and updated parameters ---
-         * --- FEATURE 3: Calls the Gemini API to generate Pros & Cons JSON ---
+         * Calls the Gemini API to generate Pros & Cons JSON.
          */
         async function generateSummary(course, contentId, placeholderId, loaderId, errorId) {
             const loaderElement = document.getElementById(loaderId);
@@ -1172,14 +1146,13 @@
 
             // Check if summary is already cached (double-check)
             if (course.ai_summary) {
-                console.log("Displaying cached summary.");
                 renderProsCons(course.ai_summary, contentId, placeholderId, loaderId, errorId);
                 return;
             }
 
             const comments = course.reviews
                 .map(r => r.comment)
-                .filter(comment => comment && comment.trim() !== ''); // Get only non-empty comments
+                .filter(comment => comment && comment.trim() !== '');
 
             if (comments.length === 0) {
                 placeholderElement.textContent = "Not enough comments to generate a summary.";
@@ -1188,34 +1161,26 @@
                 return;
             }
 
-            // --- Call Gemini API for JSON ---
+            // --- Gemini API Call Setup ---
             const systemPrompt = "You are a helpful assistant. Read the following student comments about a college course. Extract the key positive points (pros) and negative points (cons). Return your answer *only* as a valid JSON object. Do not add any text before or after the JSON. The JSON object must match this schema: {\"type\": \"object\", \"properties\": {\"pros\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"cons\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}";
-            const userQuery = "Here are the comments:\n\n- " + comments.join("\n- ");
+            const userQuery = `Summarize these comments for course ${course.id}: \n\n- ` + comments.join("\n- ");
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                // --- NEW: Ask for JSON response ---
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: "OBJECT",
                         properties: {
-                            "pros": {
-                                type: "ARRAY",
-                                items: { type: "STRING" }
-                            },
-                            "cons": {
-                                type: "ARRAY",
-                                items: { type: "STRING" }
-                            }
+                            "pros": { type: "ARRAY", items: { type: "STRING" } },
+                            "cons": { type: "ARRAY", items: { type: "STRING" } }
                         }
                     }
                 }
             };
 
-            let summaryText;
             let summaryObject = null;
 
             try {
@@ -1230,27 +1195,23 @@
                 }
 
                 const result = await response.json();
-                summaryText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                const summaryText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
                 if (summaryText) {
-                    // --- FIX: Robust JSON Parsing ---
+                    // --- Robust JSON Parsing ---
                     try {
-                        // Clean up the text by trimming whitespace or common model garbage
                         const cleanedText = summaryText.trim().replace(/^```json|```$/g, '').trim(); 
                         summaryObject = JSON.parse(cleanedText);
                     } catch (e) {
                         console.error("Failed to parse JSON from AI:", e);
                         console.log("Raw AI Response:", summaryText);
-                        // Force an error so the error message is displayed
                         throw new Error("AI returned unparsable JSON.");
                     }
-                    // --- END FIX ---
                     
                     // Render the new summary
                     renderProsCons(summaryObject, contentId, placeholderId, loaderId, errorId);
 
                     // --- Save the JSON OBJECT to Firebase ---
-                    console.log(`Saving new summary for ${course.id} to Firebase...`);
                     const docPath = `artifacts/${appId}/public/data/reviews`;
                     const docRef = doc(db, docPath, "all_course_reviews");
                     
@@ -1288,16 +1249,22 @@
             // --- 1. Load static course data first ---
             await loadCourseData();
 
-            // --- NEW: Populate School Filter and set up listener ---
+            // --- Populate Filters and set up listeners ---
             populateSchoolFilter();
+            
+            // All Courses Listeners
             document.getElementById('school-filter').addEventListener('change', () => {
                 const currentSearch = document.getElementById('search-bar').value;
                 renderAllCourses(currentSearch);
             });
-            // --- END NEW FILTER SETUP ---
+            document.getElementById('core-tag-filter').addEventListener('change', () => {
+                const currentSearch = document.getElementById('search-bar').value;
+                renderAllCourses(currentSearch);
+            });
+
 
             // Initial render with static data
-            renderAllCourses(document.getElementById('search-bar').value); // Use current search (empty)
+            renderAllCourses(document.getElementById('search-bar').value);
             renderLeaderboard(document.getElementById('leaderboard-sort').value);
 
             // --- 2. Initialize Firebase & Auth ---
@@ -1307,18 +1274,15 @@
                 db = getFirestore(app);
 
                 // Listen for auth state changes
-                onAuthStateChanged(auth, (user) => {
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        // User is signed in
                         console.log("Auth state changed: User is signed in.", user.uid);
                         userId = user.uid;
                         if (!authReady) {
                             authReady = true;
-                            // Now that auth is ready, attach the data listener
                             attachFirebaseListener();
                         }
                     } else {
-                        // User is signed out (this shouldn't happen with anonymous)
                         console.log("Auth state changed: User is signed out.");
                         authReady = false;
                     }
@@ -1342,16 +1306,12 @@
 
             // --- 3. Set up page event listeners ---
             
-            // Search bar
+            // Search bar (All Courses)
             document.getElementById('search-bar').addEventListener('input', (e) => renderAllCourses(e.target.value));
             
-            // Leaderboard sort
+            // Leaderboard controls
             document.getElementById('leaderboard-sort').addEventListener('change', (e) => renderLeaderboard(e.target.value));
-            
-            // NEW Leaderboard filter listener
             document.getElementById('leaderboard-filter').addEventListener('change', (e) => renderLeaderboard(document.getElementById('leaderboard-sort').value));
-            
-            // NEW Leaderboard search listener
             document.getElementById('leaderboard-search').addEventListener('input', (e) => renderLeaderboard(document.getElementById('leaderboard-sort').value));
 
 
@@ -1371,7 +1331,7 @@
                 }
             });
 
-            // Review Modal listeners
+            // Modal listeners
             document.getElementById('modal-close-btn').addEventListener('click', closeReviewModal);
             document.getElementById('review-modal').addEventListener('click', (e) => {
                 if (e.target.id === 'review-modal') closeReviewModal(); // Backdrop click
@@ -1379,7 +1339,6 @@
             document.getElementById('review-form').addEventListener('submit', handleSubmitReview);
             
             
-            // Leaderboard Modal listeners
             document.getElementById('leaderboard-modal-close-btn').addEventListener('click', closeLeaderboardModal);
             document.getElementById('leaderboard-modal').addEventListener('click', (e) => {
                 if (e.target.id === 'leaderboard-modal') closeLeaderboardModal(); // Backdrop click
