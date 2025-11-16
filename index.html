@@ -628,10 +628,14 @@
             activeSummaryGenerations.add(courseId);
 
             try {
-                // THE FIX: Filter for valid strings only, excluding null, undefined, or [object Object]
-                const comments = reviews
+                // Sort reviews by date, newest first
+                const sortedReviews = [...reviews].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                // THE FIX: Filter for valid strings AND take only the 20 most recent
+                const comments = sortedReviews
                     .map(r => r.comment)
-                    .filter(c => c && typeof c === 'string' && c.trim() !== ''); // Get all non-empty, valid strings
+                    .filter(c => c && typeof c === 'string' && c.trim() !== '') // Get all non-empty, valid strings
+                    .slice(0, 20); // Take only the 20 most recent
 
                 if (comments.length === 0) {
                     console.log(`Skipping summary for ${courseId}, no valid text comments.`);
@@ -1102,15 +1106,9 @@
                 summaryText = "Error: AI summary data is in an invalid format.";
             }
 
-            // --- NEW LOGIC ---
-            // 1. Check if a summary exists
-            if (summaryText) {
-                // Summary exists, display it
-                boxElement.innerHTML = `<p class="text-gray-300 text-sm">${summaryText}</p>`;
-                boxElement.classList.remove('items-center', 'justify-center');
-            
-            // 2. Check if there aren't enough reviews
-            } else if (reviewCount < 2) {
+            // --- RE-ORDERED LOGIC ---
+            // 1. THIS MUST BE FIRST: Check if there aren't enough reviews
+            if (reviewCount < 2) {
                 // Not enough reviews, show specific message
                 boxElement.innerHTML = `
                     <div class="flex flex-col items-center justify-center text-center">
@@ -1121,6 +1119,12 @@
                     </div>
                 `;
                 boxElement.classList.add('items-center', 'justify-center');
+            
+            // 2. Check if a summary exists (and we have 2+ reviews)
+            } else if (summaryText) {
+                // Summary exists, display it
+                boxElement.innerHTML = `<p class="text-gray-300 text-sm">${summaryText}</p>`;
+                boxElement.classList.remove('items-center', 'justify-center');
             
             // 3. No summary, but enough reviews to generate one
             } else {
