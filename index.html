@@ -384,6 +384,7 @@
         // IMPORTANT: This is the API key for Google Gemini.
         // Get this from Google AI Studio (https://aistudio.google.com/)
         const apiKey = "AIzaSyAXz4685osrzC6tvLSyLxwoa_D3GQLUgAo"; // API Key from original file
+        const apiKey = "AIzaSyDLYkPKr1cUlTwJHTk7peGqNXqBQr9ITIQ"; // API Key from original file
         const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
 
@@ -564,7 +565,7 @@
                 },
                 generationConfig: {
                     temperature: 0.5,
-                    maxOutputTokens: 250,
+                    maxOutputTokens: 512, // FIX: Increased from 250 to 512
                 }
             };
 
@@ -644,7 +645,8 @@
 
                 const summary = await getAiSummary(courseName, comments);
                 if (summary) {
-                    await saveAiSummary(courseId, summary);
+                    // FIX: Pass the current review count to save
+                    await saveAiSummary(courseId, summary, reviews.length);
                 }
             } catch (error) {
                 console.error(`Error generating summary for ${courseId}:`, error);
@@ -656,17 +658,20 @@
         /**
          * Saves the AI summary to the Firebase document.
          */
-        async function saveAiSummary(courseId, summary) {
+        async function saveAiSummary(courseId, summary, reviewCount) { // Added reviewCount
             if (!db || !authReady) return;
             const docPath = `artifacts/${appId}/public/data/reviews`;
             const docRef = doc(db, docPath, "all_course_reviews");
             try {
                 await setDoc(docRef, {
                     [courseId]: {
-                        ai_summary: summary
+                        ai_summary: summary,
+                        // NEW: Save metadata to prevent spam
+                        ai_summary_last_updated: new Date().toISOString(),
+                        ai_summary_review_count: reviewCount 
                     }
                 }, { merge: true });
-                console.log(`AI summary saved for ${courseId}`);
+                console.log(`AI summary saved for ${courseId} (based on ${reviewCount} reviews)`);
             } catch (error) {
                 console.error("Error saving AI summary:", error);
             }
@@ -822,6 +827,8 @@
 
                     // --- AI Summary Logic ---
                     const rawSummary = reviewData.ai_summary || null;
+                    // NEW: Get the count of reviews used for the last summary
+                    const existingSummaryReviewCount = reviewData.ai_summary_review_count || 0; 
                     let cleanSummary = null;
                     let needsRegeneration = false;
 
@@ -847,11 +854,20 @@
 
                     course.ai_summary = cleanSummary; // Store the string (or null)
 
-                    // If no summary exists (or it was invalid/old) and we have enough reviews, generate one.
-                    const shouldGenerate = (!cleanSummary || needsRegeneration);
+                    // --- NEW SPAM-FIX LOGIC ---
+                    // Check if we have 2+ new reviews since the last summary
+                    const hasEnoughNewReviews = (reviews.length >= existingSummaryReviewCount + 2);
+                    // Check if no summary exists at all and we have at least 2 reviews
+                    const noSummaryExists = !cleanSummary && reviews.length >= 2;
+                    
+                    // Generate if:
+                    // 1. It's old, bad data (needsRegeneration)
+                    // 2. No summary exists at all, and we have 2+ reviews
+                    // 3. A summary *does* exist, but we have 2+ *new* reviews since it was last generated
+                    const shouldGenerate = needsRegeneration || noSummaryExists || (cleanSummary && hasEnoughNewReviews);
 
-                    if (shouldGenerate && reviews.length > 1) { 
-                        console.log(`Generating AI summary for ${course.id} (Summary exists: ${!!cleanSummary}, Needs Regen: ${needsRegeneration})`);
+                    if (shouldGenerate) { 
+                        console.log(`Generating AI summary for ${course.id} (Reason: Regen: ${needsRegeneration}, No Summary: ${noSummaryExists}, New Reviews: ${hasEnoughNewReviews})`);
                         // Call this async but don't block the UI thread.
                         // It will save to Firebase, and onSnapshot will pick it up.
                         generateAndSaveSummary(course.id, course.name, reviews);
@@ -1078,29 +1094,45 @@
         /**
          * Renders the content of the AI Summary box.
          */
-        function renderAiSummary(boxElement, summaryText) {
+        function renderAiSummary(boxElement, summaryText, reviewCount) { // Added reviewCount
             if (!boxElement) return;
 
-            // THE FIX: Safeguard against [object Object]
-            // This check is now handling the brief moment before mergeReviewsIntoCourses cleans the data
+            // FIX: Safeguard against [object Object]
             if (typeof summaryText === 'object' && summaryText !== null) {
                 console.error("AI summary is an object, not a string:", summaryText);
                 summaryText = "Error: AI summary data is in an invalid format.";
             }
 
+            // --- NEW LOGIC ---
+            // 1. Check if a summary exists
             if (summaryText) {
-                // Summary exists
+                // Summary exists, display it
                 boxElement.innerHTML = `<p class="text-gray-300 text-sm">${summaryText}</p>`;
                 boxElement.classList.remove('items-center', 'justify-center');
+            
+            // 2. Check if there aren't enough reviews
+            } else if (reviewCount < 2) {
+                // Not enough reviews, show specific message
+                boxElement.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-center">
+                        <p class="text-gray-400 text-sm italic">
+                            Not enough reviews for an AI summary.
+                        </p>
+                        <p class="text-gray-500 text-xs mt-1">(Requires 2+ reviews)</p>
+                    </div>
+                `;
+                boxElement.classList.add('items-center', 'justify-center');
+            
+            // 3. No summary, but enough reviews to generate one
             } else {
-                // No summary yet, show a loading/pending state
+                // Show loading/pending state
                 boxElement.innerHTML = `
                     <div class="flex flex-col items-center justify-center text-center">
                         <div class="loader"></div>
                         <p class="text-gray-400 text-sm italic mt-2">
                             Generating AI insights...
                         </p>
-                        <p class="text-gray-500 text-xs mt-1">(This may take a moment. Requires 2+ reviews.)</p>
+                        <p class="text-gray-500 text-xs mt-1">(This may take a moment...)</p>
                     </div>
                 `;
                 boxElement.classList.add('items-center', 'justify-center');
@@ -1145,7 +1177,7 @@
 
             // AI Summary
             const aiSummaryBox = document.getElementById('ai-summary-box');
-            renderAiSummary(aiSummaryBox, course.ai_summary);
+            renderAiSummary(aiSummaryBox, course.ai_summary, course.reviewCount); // Pass reviewCount
 
             // Reset Form and render reviews
             resetReviewForm();
@@ -1195,7 +1227,7 @@
             
             // AI Summary
             const aiSummaryBox = document.getElementById('leaderboard-ai-summary-box');
-            renderAiSummary(aiSummaryBox, course.ai_summary);
+            renderAiSummary(aiSummaryBox, course.ai_summary, course.reviewCount); // Pass reviewCount
 
             // Set up "Go to Review" button
             document.getElementById('go-to-review-btn').dataset.id = course.id;
