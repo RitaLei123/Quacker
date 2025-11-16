@@ -198,6 +198,22 @@
         // --- CORE LOGIC ---
 
         /**
+         * A utility function to delay execution of a function until after a pause in events.
+         * @param {function} func - The function to call.
+         * @param {number} delay - The delay in milliseconds.
+         * @returns {function} A new, debounced function.
+         */
+        function debounce(func, delay = 300) {
+            let timeoutId;
+            return function(...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        }
+
+        /**
          * Calculates difficulty based on user's rules.
          */
         function getDifficulty(crse, name) {
@@ -553,7 +569,8 @@
             const reviewForm = document.getElementById('review-form');
 
             // 2. Set up event listeners
-            searchBar.addEventListener('input', handleSearch);
+            // Use debounce on the search bar input to prevent lag
+            searchBar.addEventListener('input', debounce(handleSearch, 300));
             leaderboardSort.addEventListener('change', handleLeaderboardSort);
             allCoursesList.addEventListener('click', handleListClick);
             modalCloseBtn.addEventListener('click', closeReviewModal);
