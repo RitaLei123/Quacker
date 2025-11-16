@@ -186,7 +186,7 @@
                     </div>
                 </div>
 
-                <!-- AI Summary Section (Now a simple data area) -->
+                <!-- Student Insights Section -->
                 <div>
                     <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">Student Insights</h3>
                     <div id="ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px] flex items-center justify-center">
@@ -201,7 +201,7 @@
                     <h3 id="review-form-title" class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">Add Your Anonymous Review</h3>
                     <form id="review-form" class="space-y-4">
                         <input type="hidden" id="modal-course-hidden-id">
-                        <input type="hidden" id="editing-review-id"> <!-- NEW HIDDEN FIELD FOR EDITING -->
+                        <input type="hidden" id="editing-review-id">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Left Side of Form -->
                             <div class="space-y-4">
@@ -1001,7 +1001,7 @@
             document.getElementById('review-workload').value = review.workload;
             document.getElementById('review-grade').value = review.grade || "";
             document.getElementById('review-comment').value = review.comment || "";
-            // NEW: Populate Professor field
+            // Populate Professor field
             document.getElementById('review-professor').value = review.professor || "";
             
             // Populate radio button
@@ -1117,7 +1117,7 @@
                     </div>
                 ` : '';
                 
-                // --- NEW: Display Professor Name ---
+                // --- Display Professor Name ---
                 const professorDisplay = review.professor && review.professor.trim() !== '' 
                     ? `<span class="text-xs text-gray-300">Prof: ${review.professor}</span>` 
                     : '';
@@ -1338,22 +1338,12 @@
                 if (e.target.id === 'leaderboard-modal') closeLeaderboardModal(); // Backdrop click
             });
             
+            // --- FIX: Removed scroll animation to prevent jankiness/lag ---
             document.getElementById('go-to-review-btn').addEventListener('click', (e) => {
                 const courseId = e.target.dataset.id;
                 closeLeaderboardModal();
-                // Scroll to the course in the main list and open its modal
-                const courseElement = document.querySelector(`.review-btn[data-id="${courseId}"]`);
-                if (courseElement) {
-                    courseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Add a visual cue
-                    const card = courseElement.closest('div.flex');
-                    card.style.transition = 'background-color 0.3s ease';
-                    card.style.backgroundColor = '#ef4444'; // Highlight red
-                    setTimeout(() => {
-                        card.style.backgroundColor = ''; // Reset
-                        openReviewModal(courseId);
-                    }, 500);
-                }
+                // Immediately open the review modal without trying to find and scroll the element
+                openReviewModal(courseId);
             });
         }
 
