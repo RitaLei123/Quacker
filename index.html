@@ -574,9 +574,15 @@
 
                 const candidate = result.candidates?.[0];
                 if (candidate && candidate.content?.parts?.[0]?.text) {
+                    // THE FIX: Ensure we return the text string itself
                     return candidate.content.parts[0].text;
                 } else {
-                    console.error("Invalid response from Gemini API:", result);
+                    // This might happen if the API returns a response with no text
+                    console.error("Invalid response structure from Gemini API:", result);
+                    // Check for a block reason
+                    if (candidate && candidate.finishReason === 'SAFETY') {
+                        return "AI summary generation was blocked for safety reasons.";
+                    }
                     return null;
                 }
             } catch (error) {
@@ -786,7 +792,8 @@
                     course.ai_summary = existingSummary; // Store whatever we have from Firebase
 
                     // If no summary exists and we have enough reviews (2+), generate one.
-                    if (!existingSummary && reviews.length > 1 && apiKey !== "AIzaSyAXz4685osrzC6tvLSyLxwoa_D3GQLUgAo") { 
+                    // THE FIX: Removed the faulty API key check
+                    if (!existingSummary && reviews.length > 1) { 
                         console.log(`Generating AI summary for ${course.id}`);
                         // Call this async but don't block the UI thread.
                         // It will save to Firebase, and onSnapshot will pick it up.
@@ -1016,6 +1023,12 @@
          */
         function renderAiSummary(boxElement, summaryText) {
             if (!boxElement) return;
+
+            // THE FIX: Safeguard against [object Object]
+            if (typeof summaryText === 'object' && summaryText !== null) {
+                console.error("AI summary is an object, not a string:", summaryText);
+                summaryText = "Error: AI summary data is in an invalid format.";
+            }
 
             if (summaryText) {
                 // Summary exists
