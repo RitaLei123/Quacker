@@ -789,13 +789,37 @@
                     course.avgGpa = gpaCount > 0 ? (totalGpa / gpaCount) : -1;
 
                     // --- AI Summary Logic ---
-                    const existingSummary = reviewData.ai_summary || null;
-                    course.ai_summary = existingSummary; // Store whatever we have from Firebase
+                    const rawSummary = reviewData.ai_summary || null;
+                    let cleanSummary = null;
+                    let needsRegeneration = false;
 
-                    // If no summary exists and we have enough reviews (2+), generate one.
-                    // THE FIX: Removed the faulty API key check
-                    if (!existingSummary && reviews.length > 1) { 
-                        console.log(`Generating AI summary for ${course.id}`);
+                    // FIX: Detect and handle old, bad object data
+                    if (typeof rawSummary === 'object' && rawSummary !== null) {
+                        if (rawSummary.text && typeof rawSummary.text === 'string') {
+                            // It's the old {text: "..."} object.
+                            // Use the text for display, but flag for regeneration
+                            // to fix the data in Firebase.
+                            console.warn(`Found old summary object for ${course.id}. Flagging for regeneration.`);
+                            cleanSummary = rawSummary.text;
+                            needsRegeneration = true; // Force regeneration to save the clean string
+                        } else {
+                            // It's an unknown/invalid object.
+                            console.error(`Invalid summary object for ${course.id}. Flagging for regeneration.`);
+                            cleanSummary = null; // Treat as no summary
+                            needsRegeneration = true;
+                        }
+                    } else if (typeof rawSummary === 'string') {
+                        // This is the correct format
+                        cleanSummary = rawSummary;
+                    }
+
+                    course.ai_summary = cleanSummary; // Store the string (or null)
+
+                    // If no summary exists (or it was invalid/old) and we have enough reviews, generate one.
+                    const shouldGenerate = (!cleanSummary || needsRegeneration);
+
+                    if (shouldGenerate && reviews.length > 1) { 
+                        console.log(`Generating AI summary for ${course.id} (Summary exists: ${!!cleanSummary}, Needs Regen: ${needsRegeneration})`);
                         // Call this async but don't block the UI thread.
                         // It will save to Firebase, and onSnapshot will pick it up.
                         generateAndSaveSummary(course.id, course.name, reviews);
@@ -1026,6 +1050,7 @@
             if (!boxElement) return;
 
             // THE FIX: Safeguard against [object Object]
+            // This check is now handling the brief moment before mergeReviewsIntoCourses cleans the data
             if (typeof summaryText === 'object' && summaryText !== null) {
                 console.error("AI summary is an object, not a string:", summaryText);
                 summaryText = "Error: AI summary data is in an invalid format.";
