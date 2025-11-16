@@ -37,7 +37,7 @@
             transition: transform 0.25s ease;
             transform: scale(0.95);
         }
-        /* Simple loading spinner */
+        /* Simple loading spinner (removed but kept style block) */
         .loader {
             border: 4px solid #f3f3f3; /* Light grey */
             border-top: 4px solid #ef4444; /* Red */
@@ -60,7 +60,7 @@
             <h1 class="text-3xl md:text-4xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-400">
                 QuACKER: The RPI Course Explorer
             </h1>
-            <p class="text-center text-gray-400 mt-2">Find course info, read anonymous reviews, and see AI-powered summaries.</p>
+            <p class="text-center text-gray-400 mt-2">Find course info, read anonymous reviews, and see student data.</p>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -111,14 +111,9 @@
                         placeholder="Search by name, subject, or course #" 
                         class="col-span-full md:col-span-1 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
                     >
-                    <!-- SCHOOL FILTER (General) -->
-                    <select id="school-filter" class="col-span-full md:col-span-1 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <option value="">Filter by School...</option>
-                        <!-- Options populated by JavaScript -->
-                    </select>
-                    <!-- CORE TAG FILTER -->
-                    <select id="core-tag-filter" class="col-span-full md:col-span-1 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <option value="">Filter by Core Tag...</option>
+                    <!-- COMBINED ALL COURSES FILTER -->
+                    <select id="all-courses-filter" class="col-span-full md:col-span-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="">Filter by School/Core Tag...</option>
                         <!-- Options populated by JavaScript -->
                     </select>
                 </div>
@@ -185,14 +180,13 @@
                     </div>
                 </div>
 
-                <!-- AI Summary Section (Pros & Cons) -->
+                <!-- AI Summary Section (Now a simple data area) -->
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">AI Summary (from reviews)</h3>
-                    <div id="ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px]">
-                        <div id="ai-summary-loader" class="loader hidden mx-auto"></div>
-                        <div id="ai-error-box" class="text-red-400 text-sm hidden"></div>
-                        <p id="ai-summary-placeholder" class="text-gray-400 italic text-sm text-center hidden"></p>
-                        <div id="ai-summary-content"></div> <!-- Pros/Cons rendered here -->
+                    <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">Student Insights</h3>
+                    <div id="ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px] flex items-center justify-center">
+                        <p class="text-gray-300 italic text-sm">
+                            AI Summary feature has been disabled for stability.
+                        </p>
                     </div>
                 </div>
 
@@ -330,14 +324,13 @@
                     </div>
                 </div>
 
-                 <!-- AI Summary Section (Pros & Cons) -->
+                 <!-- AI Summary Section (Now a simple data area) -->
                  <div>
-                    <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">AI Summary (from reviews)</h3>
-                    <div id="leaderboard-ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px]">
-                        <div id="leaderboard-ai-summary-loader" class="loader hidden mx-auto"></div>
-                        <div id="leaderboard-ai-error-box" class="text-red-400 text-sm hidden"></div>
-                        <p id="leaderboard-ai-summary-placeholder" class="text-gray-400 italic text-sm text-center hidden"></p>
-                        <div id="leaderboard-ai-summary-content"></div> <!-- Pros/Cons rendered here -->
+                    <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">Student Insights</h3>
+                    <div id="leaderboard-ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px] flex items-center justify-center">
+                        <p class="text-gray-300 italic text-sm">
+                            AI Summary feature has been disabled for stability.
+                        </p>
                     </div>
                 </div>
 
@@ -373,7 +366,7 @@
 
         // IMPORTANT: This is where you paste your API key.
         // Get this from Google AI Studio (https://aistudio.google.com/)
-        const apiKey = "AIzaSyAXz4685osrzC6tvLSyLxwoa_D3GQLUgAo";
+        const apiKey = "AIzaSyAXz4685osrzC6tvLSyLxwoa_D3GQLUgAo"; // Retained for later use
 
         // Use __app_id and __firebase_config if they exist (Canvas environment), otherwise use defaults
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -438,11 +431,8 @@
 
         // Map for specific required tags (HASS, SCIENCE, MATH)
         const specificTagsMap = new Map();
-        // HASS Tag Codes
         ['ARTS', 'COGS', 'COMM', 'ECON', 'GSAS', 'IHSS', 'INQR', 'LANG', 'LITR', 'PHIL', 'PSYC', 'STSO', 'WRIT'].forEach(code => specificTagsMap.set(code, 'HASS'));
-        // SCIENCE Tag Codes
         ['ASTR', 'BCBP', 'BIOL', 'CHEM', 'CSCI', 'ERTH', 'ISCI', 'PHYS'].forEach(code => specificTagsMap.set(code, 'SCIENCE'));
-        // MATH Tag Codes (MATH and MATP only)
         ['MATH', 'MATP'].forEach(code => specificTagsMap.set(code, 'MATH'));
 
 
@@ -450,28 +440,32 @@
          * Populates the filter dropdowns.
          */
         function populateSchoolFilter() {
-            const schoolFilterElement = document.getElementById('school-filter');
+            const allCoursesFilterElement = document.getElementById('all-courses-filter');
             const leaderboardFilterElement = document.getElementById('leaderboard-filter');
-            const coreTagFilterElement = document.getElementById('core-tag-filter');
 
-            if (!schoolFilterElement || !leaderboardFilterElement || !coreTagFilterElement) return;
+            if (!allCoursesFilterElement || !leaderboardFilterElement) return;
 
             const schools = schoolData.map(s => s.name).sort();
             const tags = ['HASS', 'SCIENCE', 'MATH'];
             
-            // Populate General School Filter
-            const schoolOptionsHtml = schools.map(school => 
-                `<option value="${school}">${school}</option>`
-            ).join('');
-            schoolFilterElement.innerHTML = `<option value="">Filter by School...</option>` + schoolOptionsHtml;
+            // --- NEW: Populate Combined All Courses Filter ---
+            let allCoursesOptions = [`<option value="">Filter by School/Core Tag...</option>`];
 
-            // Populate Core Tag Filter
-            const coreTagOptionsHtml = tags.map(tag => 
-                `<option value="${tag}">${tag}</option>`
-            ).join('');
-            coreTagFilterElement.innerHTML = `<option value="">Filter by Core Tag...</option>` + coreTagOptionsHtml;
+            allCoursesOptions.push(`<optgroup label="Core Tags">`);
+            tags.forEach(tag => {
+                allCoursesOptions.push(`<option value="TAG-${tag}">${tag}</option>`);
+            });
+            allCoursesOptions.push(`</optgroup>`);
+
+            allCoursesOptions.push(`<optgroup label="Schools">`);
+            schools.forEach(school => {
+                allCoursesOptions.push(`<option value="SCHOOL-${school}">${school}</option>`);
+            });
+            allCoursesOptions.push(`</optgroup>`);
+
+            allCoursesFilterElement.innerHTML = allCoursesOptions.join('');
             
-            // Populate Leaderboard Filter with Tags and Schools
+            // --- Leaderboard Filter (Remains the same) ---
             let leaderboardOptions = [`<option value="">Filter All</option>`];
             
             leaderboardOptions.push(`<optgroup label="Core Tags">`);
@@ -631,13 +625,8 @@
                     course.avgAttendance = (totalAttendance / course.reviewCount) * 100;
                     course.avgGpa = gpaCount > 0 ? (totalGpa / gpaCount) : -1;
 
-                    // --- CHECK FOR CORRUPT DATA (String or missing expected fields) ---
-                    if (reviewData.ai_summary && (typeof reviewData.ai_summary === 'string' || !reviewData.ai_summary.pros || !reviewData.ai_summary.cons)) {
-                        course.ai_summary = null;
-                        console.warn(`Old/Corrupt summary data found for ${course.id}. Cache invalidated. New JSON summary will be generated.`);
-                    } else {
-                        course.ai_summary = reviewData.ai_summary || null;
-                    }
+                    // AI summary fields are explicitly ignored/removed
+                    course.ai_summary = null;
                 
                 } else {
                     // Reset if no reviews exist
@@ -666,22 +655,36 @@
             if (!listElement) return;
 
             const lowerFilter = filterText.toLowerCase().trim();
-            const schoolFilterValue = document.getElementById('school-filter').value;
-            const coreTagFilterValue = document.getElementById('core-tag-filter').value;
+            const allCoursesFilterValue = document.getElementById('all-courses-filter').value;
             
+            let filterType = '';
+            let filterTerm = '';
+
+            if (allCoursesFilterValue.startsWith('TAG-')) {
+                filterType = 'TAG';
+                filterTerm = allCoursesFilterValue.substring(4);
+            } else if (allCoursesFilterValue.startsWith('SCHOOL-')) {
+                filterType = 'SCHOOL';
+                filterTerm = allCoursesFilterValue.substring(7);
+            }
+
             const filteredCourses = allCourses.filter(course => {
                 // 1. Search Bar Filter
                 const searchMatch = !filterText || course.name.toLowerCase().includes(lowerFilter) ||
                                                 course.id.toLowerCase().includes(lowerFilter) ||
                                                 course.subj.toLowerCase().includes(lowerFilter);
                 
-                // 2. School Filter
-                const schoolMatch = !schoolFilterValue || course.school === schoolFilterValue;
+                // 2. Combined Filter
+                let combinedMatch = true;
+                if (allCoursesFilterValue) {
+                    if (filterType === 'TAG') {
+                        combinedMatch = course.tags.includes(filterTerm);
+                    } else if (filterType === 'SCHOOL') {
+                        combinedMatch = course.school === filterTerm;
+                    }
+                }
 
-                // 3. Core Tag Filter
-                const coreTagMatch = !coreTagFilterValue || course.tags.includes(coreTagFilterValue);
-
-                return searchMatch && schoolMatch && coreTagMatch;
+                return searchMatch && combinedMatch;
             });
 
             filteredCourses.sort((a, b) => {
@@ -863,9 +866,6 @@
             document.getElementById('modal-avg-grade').textContent = gpaToGrade(course.avgGpa);
             document.getElementById('modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
 
-            // Reset AI Summary
-            resetAISummary(course, 'ai-summary-box', 'ai-summary-loader', 'ai-error-box');
-
             // Reset Form
             document.getElementById('review-form').reset();
             document.getElementById('submit-review-btn').disabled = false;
@@ -917,9 +917,6 @@
             
             // Set up "Go to Review" button
             document.getElementById('go-to-review-btn').dataset.id = course.id;
-
-            // Reset AI Summary
-            resetAISummary(course, 'leaderboard-ai-summary-box', 'leaderboard-ai-summary-loader', 'leaderboard-ai-error-box');
             
             // Render Reviews
             renderReviewsList(course.reviews, 'leaderboard-reviews-list');
@@ -1014,17 +1011,6 @@
         }
         
         /**
-         * Placeholder for Edit functionality (Advanced feature, not fully implemented here)
-         */
-        // function handleEditReviewClick(event) {
-        //     const button = event.target;
-        //     const index = parseInt(button.dataset.index);
-        //     const courseId = button.dataset.courseId;
-        //     alert(`Editing review at index ${index} for ${courseId}. (Requires re-populating the form, skipping for now)`);
-        // }
-
-
-        /**
          * Event handler for the Delete button.
          */
         async function handleDeleteReviewClick(event) {
@@ -1032,7 +1018,7 @@
             const reviewIndex = parseInt(button.dataset.index);
             const courseId = button.dataset.courseId;
             
-            // ⚠️ Safety Check: Since we cannot use confirm(), we rely on user clicking.
+            // Safety Check: Since we cannot use confirm(), we rely on user clicking the button.
             button.disabled = true;
             button.textContent = 'Deleting...';
             
@@ -1055,13 +1041,11 @@
                     [`${courseId}.reviews`]: arrayRemove(reviewToDelete)
                 });
                 
-                // 3. Invalidate the AI cache since the reviews have changed
-                await updateDoc(docRef, {
-                    [`${courseId}.ai_summary`]: null
-                });
+                // 3. Invalidate the AI cache (removed AI summary line, but keeping for future)
+                // await updateDoc(docRef, { [`${courseId}.ai_summary`]: null });
 
                 console.log(`Review deleted for ${courseId}`);
-                // The onSnapshot listener will handle the re-render automatically.
+                // The onSnapshot listener handles the re-render automatically.
 
             } catch (error) {
                 console.error("Error deleting review:", error);
@@ -1071,8 +1055,6 @@
             }
         }
 
-
-        // --- FIREBASE & AI HANDLERS ---
 
         /**
          * Handles the submission of the review form.
@@ -1098,7 +1080,7 @@
                 attendance: document.querySelector('input[name="review-attendance"]:checked').value,
                 comment: document.getElementById('review-comment').value.trim() || null,
                 timestamp: new Date().toISOString(),
-                userId: userId // <-- NEW: Include the current user's ID
+                userId: userId // Include the current user's ID
             };
 
             // Path to the document
@@ -1113,10 +1095,8 @@
                     }
                 }, { merge: true }); 
 
-                // --- STEP 2: Invalidate the cache ---
-                await updateDoc(docRef, {
-                    [`${courseId}.ai_summary`]: null
-                });
+                // --- STEP 2: Invalidate the cache (removed AI summary line, but keeping for future)
+                // await updateDoc(docRef, { [`${courseId}.ai_summary`]: null });
 
                 console.log(`Review submitted for ${courseId}`);
                 closeReviewModal();
@@ -1126,206 +1106,6 @@
                 alert("There was an error submitting your review. Please try again."); 
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Submit Review";
-            }
-        }
-
-        /**
-         * Renders the Pros & Cons list.
-         */
-        function renderProsCons(summaryObject, contentId, placeholderId, loaderId, errorId) {
-            const contentElement = document.getElementById(contentId);
-            const placeholderElement = document.getElementById(placeholderId);
-            const loaderElement = document.getElementById(loaderId);
-            const errorElement = document.getElementById(errorId);
-            
-            // Hide all utility elements
-            loaderElement.classList.add('hidden');
-            errorElement.classList.add('hidden');
-            placeholderElement.classList.add('hidden');
-            
-            if (!summaryObject || !summaryObject.pros || !summaryObject.cons) {
-                placeholderElement.textContent = "Could not parse AI summary.";
-                placeholderElement.classList.remove('hidden');
-                contentElement.innerHTML = ''; // Clear content
-                return;
-            }
-
-            // Build Pros list
-            let prosHtml = summaryObject.pros.length > 0
-                ? summaryObject.pros.map(pro => `<li class="text-green-300">${pro}</li>`).join('')
-                : '<li class="text-gray-400 italic text-sm">No specific pros mentioned.</li>';
-            
-            // Build Cons list
-            let consHtml = summaryObject.cons.length > 0
-                ? summaryObject.cons.map(con => `<li class="text-red-300">${con}</li>`).join('')
-                : '<li class="text-gray-400 italic text-sm">No specific cons mentioned.</li>';
-
-            // Set the final HTML
-            contentElement.innerHTML = `
-                <div class="space-y-3">
-                    <div>
-                        <h4 class="font-semibold text-gray-200 mb-1">Pros</h4>
-                        <ul class="list-disc list-inside space-y-1 pl-2">
-                            ${prosHtml}
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-200 mb-1">Cons</h4>
-                        <ul class="list-disc list-inside space-y-1 pl-2">
-                            ${consHtml}
-                        </ul>
-                    </div>
-                </div>
-            `;
-            
-            contentElement.classList.remove('hidden');
-        }
-
-
-        /**
-         * Resets the AI summary box to its initial state, checking cache and triggering generation.
-         */
-        function resetAISummary(course, containerId, loaderId, errorId) {
-            const isReviewModal = (containerId === 'ai-summary-box');
-            const contentId = isReviewModal ? 'ai-summary-content' : 'leaderboard-ai-summary-content';
-            const placeholderId = isReviewModal ? 'ai-summary-placeholder' : 'leaderboard-ai-summary-placeholder';
-
-            const contentElement = document.getElementById(contentId);
-            const placeholderElement = document.getElementById(placeholderId);
-            const loaderElement = document.getElementById(loaderId);
-            const errorElement = document.getElementById(errorId);
-            
-            const hasReviews = course && course.reviews && course.reviews.length > 0;
-
-            // Always start by clearing content and hiding all utility elements
-            contentElement.innerHTML = '';
-            contentElement.classList.add('hidden');
-            placeholderElement.classList.add('hidden');
-            loaderElement.classList.add('hidden');
-            errorElement.classList.add('hidden');
-
-            if (course && course.ai_summary) {
-                // Case 1: We have a cached summary object. Render it.
-                renderProsCons(course.ai_summary, contentId, placeholderId, loaderId, errorId);
-            
-            } else if (hasReviews) {
-                // Case 2: No cached summary, BUT we have reviews. Auto-generate.
-                loaderElement.classList.remove('hidden'); // Show loader
-                
-                generateSummary(course, contentId, placeholderId, loaderId, errorId);
-
-            } else {
-                // Case 3: No reviews, no summary. Show placeholder.
-                placeholderElement.textContent = "No reviews yet. Submit one to get an AI summary!";
-                placeholderElement.classList.remove('hidden');
-            }
-        }
-
-        /**
-         * Calls the Gemini API to generate Pros & Cons JSON.
-         */
-        async function generateSummary(course, contentId, placeholderId, loaderId, errorId) {
-            const loaderElement = document.getElementById(loaderId);
-            const errorElement = document.getElementById(errorId);
-            const placeholderElement = document.getElementById(placeholderId);
-
-            if (!apiKey || apiKey === "PASTE_YOUR_API_KEY_FROM_AI_STUDIO_HERE") {
-                errorElement.textContent = "AI Summary is not configured. (Missing API Key)";
-                errorElement.classList.remove("hidden");
-                loaderElement.classList.add('hidden');
-                return;
-            }
-
-            // Check if summary is already cached (double-check)
-            if (course.ai_summary) {
-                renderProsCons(course.ai_summary, contentId, placeholderId, loaderId, errorId);
-                return;
-            }
-
-            const comments = course.reviews
-                .map(r => r.comment)
-                .filter(comment => comment && comment.trim() !== '');
-
-            if (comments.length === 0) {
-                placeholderElement.textContent = "Not enough comments to generate a summary.";
-                placeholderElement.classList.remove('hidden');
-                loaderElement.classList.add('hidden');
-                return;
-            }
-
-            // --- Gemini API Call Setup ---
-            const systemPrompt = "You are a helpful assistant. Read the following student comments about a college course. Extract the key positive points (pros) and negative points (cons). Return your answer *only* as a valid JSON object. Do not add any text before or after the JSON. The JSON object must match this schema: {\"type\": \"object\", \"properties\": {\"pros\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"cons\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}";
-            const userQuery = `Summarize these comments for course ${course.id}: \n\n- ` + comments.join("\n- ");
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            "pros": { type: "ARRAY", items: { type: "STRING" } },
-                            "cons": { type: "ARRAY", items: { type: "STRING" } }
-                        }
-                    }
-                }
-            };
-
-            let summaryObject = null;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API request failed with status ${response.status}`);
-                }
-
-                const result = await response.json();
-                const summaryText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (summaryText) {
-                    // --- Robust JSON Parsing ---
-                    try {
-                        const cleanedText = summaryText.trim().replace(/^```json|```$/g, '').trim(); 
-                        summaryObject = JSON.parse(cleanedText);
-                    } catch (e) {
-                        console.error("Failed to parse JSON from AI:", e);
-                        console.log("Raw AI Response:", summaryText);
-                        throw new Error("AI returned unparsable JSON.");
-                    }
-                    
-                    // Render the new summary
-                    renderProsCons(summaryObject, contentId, placeholderId, loaderId, errorId);
-
-                    // --- Save the JSON OBJECT to Firebase ---
-                    const docPath = `artifacts/${appId}/public/data/reviews`;
-                    const docRef = doc(db, docPath, "all_course_reviews");
-                    
-                    await setDoc(docRef, {
-                        [course.id]: {
-                            ai_summary: summaryObject // Save the object
-                        }
-                    }, { merge: true });
-
-                    // Update local state
-                    course.ai_summary = summaryObject;
-
-                } else {
-                    throw new Error("Invalid response structure from API (missing content).");
-                }
-
-            } catch (error) {
-                console.error("Error generating summary:", error);
-                errorElement.textContent = "Error generating summary. Please try again. (Check console for details)";
-                errorElement.classList.remove('hidden');
-                loaderElement.classList.add('hidden');
-                placeholderElement.classList.add('hidden');
             }
         }
 
@@ -1345,11 +1125,7 @@
             populateSchoolFilter();
             
             // All Courses Listeners
-            document.getElementById('school-filter').addEventListener('change', () => {
-                const currentSearch = document.getElementById('search-bar').value;
-                renderAllCourses(currentSearch);
-            });
-            document.getElementById('core-tag-filter').addEventListener('change', () => {
+            document.getElementById('all-courses-filter').addEventListener('change', () => {
                 const currentSearch = document.getElementById('search-bar').value;
                 renderAllCourses(currentSearch);
             });
