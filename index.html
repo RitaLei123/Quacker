@@ -37,13 +37,13 @@
             transition: transform 0.25s ease;
             transform: scale(0.95);
         }
-        /* Simple loading spinner (removed but kept style block) */
+        /* Simple loading spinner */
         .loader {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #ef4444; /* Red */
+            border: 4px solid #4b5563; /* gray-600 */
+            border-top: 4px solid #ef4444; /* red-500 */
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 24px;
+            height: 24px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
@@ -188,10 +188,11 @@
 
                 <!-- Student Insights Section -->
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">Student Insights</h3>
+                    <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">Student Insights (AI Generated)</h3>
                     <div id="ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px] flex items-center justify-center">
+                        <!-- AI Summary will be rendered here -->
                         <p class="text-gray-300 italic text-sm">
-                            AI Summary feature has been disabled for stability.
+                            Loading AI summary...
                         </p>
                     </div>
                 </div>
@@ -338,10 +339,11 @@
 
                  <!-- AI Summary Section (Now a simple data area) -->
                  <div>
-                    <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">Student Insights</h3>
+                    <h3 class="text-lg font-semibold text-gray-200 mb-3 pt-4 border-t border-gray-700">Student Insights (AI Generated)</h3>
                     <div id="leaderboard-ai-summary-box" class="bg-gray-700/50 p-4 rounded-lg min-h-[100px] flex items-center justify-center">
+                        <!-- AI Summary will be rendered here -->
                         <p class="text-gray-300 italic text-sm">
-                            AI Summary feature has been disabled for stability.
+                            Loading AI summary...
                         </p>
                     </div>
                 </div>
@@ -376,9 +378,11 @@
 
         // --- CONFIG & GLOBAL STATE ---
 
-        // IMPORTANT: This is where you paste your API key.
+        // IMPORTANT: This is the API key for Google Gemini.
         // Get this from Google AI Studio (https://aistudio.google.com/)
-        const apiKey = "AIzaSyAXz4685osrzC6tvLSyLxwoa_D3GQLUgAo"; // Retained for later use
+        const apiKey = "AIzaSyAXz4685osrzC6tvLSyLxwoa_D3GQLUgAo"; // API Key from original file
+        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
 
         // Use __app_id and __firebase_config if they exist (Canvas environment), otherwise use defaults
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -398,6 +402,7 @@
         let auth, db, userId; // Firebase instances
         let authReady = false; // Flag to track auth state
         let currentSchoolFilter = ""; // Global state for school filtering
+        const activeSummaryGenerations = new Set(); // Track active API calls
 
         // --- GPA CONVERSION ---
         const gpaMap = {
@@ -513,6 +518,122 @@
             leaderboardFilterElement.innerHTML = leaderboardOptions.join('');
         }
 
+        // --- GEMINI API FUNCTIONS ---
+
+        /**
+         * Fetches with exponential backoff for rate limiting.
+         */
+        async function fetchWithBackoff(url, options, retries = 3, delay = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    if (response.status === 429 && retries > 0) {
+                        console.warn(`Rate limited. Retrying in ${delay}ms...`);
+                        await new Promise(res => setTimeout(res, delay));
+                        return fetchWithBackoff(url, options, retries - 1, delay * 2);
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            } catch (error) {
+                console.error("Fetch error:", error);
+                if (retries > 0) {
+                    console.warn(`Fetch failed. Retrying in ${delay}ms...`);
+                    await new Promise(res => setTimeout(res, delay));
+                    return fetchWithBackoff(url, options, retries - 1, delay * 2);
+                }
+                throw error; // Rethrow after all retries
+            }
+        }
+
+        /**
+         * Calls the Gemini API to get a summary of review comments.
+         */
+        async function getAiSummary(courseName, comments) {
+            const systemPrompt = "You are a helpful student advisor. Read the following anonymous student comments for a course and provide a concise, one-paragraph summary of the general student sentiment. Focus on common themes like difficulty, workload, and usefulness. Do not use markdown or lists. Be neutral and objective.";
+
+            const userQuery = `Here are the student comments for the course "${courseName}":\n\n${comments.map(c => `- "${c}"`).join('\n')}\n\nProvide a one-paragraph summary of the student sentiment:`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                generationConfig: {
+                    temperature: 0.5,
+                    maxOutputTokens: 250,
+                }
+            };
+
+            try {
+                const result = await fetchWithBackoff(geminiApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const candidate = result.candidates?.[0];
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    return candidate.content.parts[0].text;
+                } else {
+                    console.error("Invalid response from Gemini API:", result);
+                    return null;
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                return null;
+            }
+        }
+
+        /**
+         * Generates and saves an AI summary to Firebase.
+         */
+        async function generateAndSaveSummary(courseId, courseName, reviews) {
+            // Prevent duplicate calls
+            if (activeSummaryGenerations.has(courseId)) return;
+            activeSummaryGenerations.add(courseId);
+
+            try {
+                const comments = reviews
+                    .map(r => r.comment)
+                    .filter(c => c && c.trim() !== ''); // Get all non-empty comments
+
+                if (comments.length === 0) {
+                    console.log(`Skipping summary for ${courseId}, no text comments.`);
+                    return;
+                }
+
+                const summary = await getAiSummary(courseName, comments);
+                if (summary) {
+                    await saveAiSummary(courseId, summary);
+                }
+            } catch (error) {
+                console.error(`Error generating summary for ${courseId}:`, error);
+            } finally {
+                activeSummaryGenerations.delete(courseId); // Allow regeneration if needed
+            }
+        }
+
+        /**
+         * Saves the AI summary to the Firebase document.
+         */
+        async function saveAiSummary(courseId, summary) {
+            if (!db || !authReady) return;
+            const docPath = `artifacts/${appId}/public/data/reviews`;
+            const docRef = doc(db, docPath, "all_course_reviews");
+            try {
+                await setDoc(docRef, {
+                    [courseId]: {
+                        ai_summary: summary
+                    }
+                }, { merge: true });
+                console.log(`AI summary saved for ${courseId}`);
+            } catch (error) {
+                console.error("Error saving AI summary:", error);
+            }
+        }
+
+
         // --- CORE DATA & RENDERING LOGIC ---
 
         /**
@@ -579,13 +700,14 @@
                         avgWorkload: 0.0,
                         avgAttendance: 0,
                         avgGpa: -1,
-                        ai_summary: null,
+                        ai_summary: null, // Initialize ai_summary field
                     };
                 });
                 
                 console.log(`Loaded ${allCourses.length} courses from JSON files.`);
 
-            } catch (error) {
+            } catch (error)
+            {
                 console.error("Failed to load course data:", error);
                 document.getElementById('all-courses-list').innerHTML = `
                     <div class="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg">
@@ -659,8 +781,17 @@
                     course.avgAttendance = (totalAttendance / course.reviewCount) * 100;
                     course.avgGpa = gpaCount > 0 ? (totalGpa / gpaCount) : -1;
 
-                    // AI summary fields are explicitly ignored/removed
-                    course.ai_summary = null;
+                    // --- AI Summary Logic ---
+                    const existingSummary = reviewData.ai_summary || null;
+                    course.ai_summary = existingSummary; // Store whatever we have from Firebase
+
+                    // If no summary exists and we have enough reviews (2+), generate one.
+                    if (!existingSummary && reviews.length > 1 && apiKey !== "AIzaSyAXz4685osrzC6tvLSyLxwoa_D3GQLUgAo") { 
+                        console.log(`Generating AI summary for ${course.id}`);
+                        // Call this async but don't block the UI thread.
+                        // It will save to Firebase, and onSnapshot will pick it up.
+                        generateAndSaveSummary(course.id, course.name, reviews);
+                    }
                 
                 } else {
                     // Reset if no reviews exist
@@ -881,6 +1012,31 @@
         // --- MODAL FUNCTIONS ---
 
         /**
+         * Renders the content of the AI Summary box.
+         */
+        function renderAiSummary(boxElement, summaryText) {
+            if (!boxElement) return;
+
+            if (summaryText) {
+                // Summary exists
+                boxElement.innerHTML = `<p class="text-gray-300 text-sm">${summaryText}</p>`;
+                boxElement.classList.remove('items-center', 'justify-center');
+            } else {
+                // No summary yet, show a loading/pending state
+                boxElement.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-center">
+                        <div class="loader"></div>
+                        <p class="text-gray-400 text-sm italic mt-2">
+                            Generating AI insights...
+                        </p>
+                        <p class="text-gray-500 text-xs mt-1">(This may take a moment. Requires 2+ reviews.)</p>
+                    </div>
+                `;
+                boxElement.classList.add('items-center', 'justify-center');
+            }
+        }
+
+        /**
          * Resets the review form state, clearing inputs and status.
          */
         function resetReviewForm() {
@@ -915,6 +1071,10 @@
             document.getElementById('modal-avg-workload').textContent = course.avgWorkload.toFixed(1);
             document.getElementById('modal-avg-grade').textContent = gpaToGrade(course.avgGpa);
             document.getElementById('modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
+
+            // AI Summary
+            const aiSummaryBox = document.getElementById('ai-summary-box');
+            renderAiSummary(aiSummaryBox, course.ai_summary);
 
             // Reset Form and render reviews
             resetReviewForm();
@@ -962,6 +1122,10 @@
             document.getElementById('leaderboard-modal-avg-grade').textContent = gpaToGrade(course.avgGpa);
             document.getElementById('leaderboard-modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
             
+            // AI Summary
+            const aiSummaryBox = document.getElementById('leaderboard-ai-summary-box');
+            renderAiSummary(aiSummaryBox, course.ai_summary);
+
             // Set up "Go to Review" button
             document.getElementById('go-to-review-btn').dataset.id = course.id;
             
@@ -1066,7 +1230,8 @@
                 
             } catch (error) {
                 console.error("Error deleting review:", error);
-                alert("There was an error deleting your review.");
+                // Use custom message box instead of alert()
+                console.error("There was an error deleting your review.");
                 button.disabled = false;
                 button.textContent = 'Delete';
             }
@@ -1157,7 +1322,7 @@
         async function handleSubmitReview(event) {
             event.preventDefault();
             if (!db || !authReady || !userId) {
-                alert("Cannot submit review: Firebase is not connected.");
+                console.error("Cannot submit review: Firebase is not connected.");
                 return;
             }
 
@@ -1229,7 +1394,7 @@
 
             } catch (error) {
                 console.error("Error saving review:", error);
-                alert("There was an error saving your review. Please try again."); 
+                console.error("There was an error saving your review. Please try again."); 
                 submitBtn.disabled = false;
                 submitBtn.textContent = isEditing ? "Update Review" : "Submit Review";
             }
