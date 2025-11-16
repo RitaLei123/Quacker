@@ -381,17 +381,36 @@
         }
 
         /**
-         * Calculates difficulty based on user's rules.
+         * Calculates difficulty based on user's rules, now aware of HASS.
+         * @param {string} crse - The course number (e.g., "4210").
+         * @param {string} name - The course name.
+         * @param {boolean} isHass - Whether the course is HASS.
          */
-        function getDifficulty(crse, name) {
+        function getDifficulty(crse, name, isHass) {
             const level = parseInt(crse, 10);
             const nameLower = name.toLowerCase();
-            if (level >= 1000 && level < 2000) return 1;
-            if (level >= 2000 && level < 3000) return nameLower.includes('intro') ? 2 : 3;
-            if (level >= 3000 && level < 4000) return nameLower.includes('intro') ? 2 : 3;
-            if (level >= 4000) return nameLower.includes('intro') ? 4 : 5;
-            return 0;
+            const isIntro = nameLower.includes('intro');
+
+            if (level < 2000) return 1; // 1000-level
+            
+            if (level < 3000) { // 2000-level
+                if (isHass) return isIntro ? 1 : 2;
+                return isIntro ? 2 : 3;
+            }
+            
+            if (level < 4000) { // 3000-level
+                if (isHass) return 2;
+                return isIntro ? 2 : 3;
+            }
+            
+            if (level >= 4000) { // 4000-level+
+                if (isHass) return isIntro ? 3 : 4; // Max HASS diff at 4
+                return isIntro ? 4 : 5; // Max STEM diff at 5
+            }
+            
+            return 0; // Default
         }
+
 
         /**
          * Gets the appropriate color class for a difficulty level.
@@ -1085,14 +1104,15 @@
                     const course = courseData[id];
                     if (course.subj && course.crse && course.name) {
                         const schoolName = subjectSchoolMap.get(course.subj) || 'Uncategorized';
+                        const isHass = schoolName === 'Humanities, Arts, and Social Sciences';
                         courses.push({
                             id: id,
                             name: course.name,
                             subj: course.subj,
                             crse: course.crse,
-                            difficulty: getDifficulty(course.crse, course.name),
+                            difficulty: getDifficulty(course.crse, course.name, isHass), // Pass isHass to difficulty calc
                             school: schoolName,
-                            isHass: schoolName === 'Humanities, Arts, and Social Sciences',
+                            isHass: isHass,
                             reviews: [] // Initialize empty reviews array
                         });
                     }
@@ -1218,5 +1238,12 @@
             init(firebaseConfig);
         });
     </script>
+
+    <!-- 
+    This is a duplicate <script type="module"> block that was causing errors.
+    I have removed it to fix the application. The correct and only script block
+    is the one above.
+    -->
+
 </body>
 </html>
