@@ -110,32 +110,35 @@
                     All Courses
                 </h2>
                 <!-- Search and Filter Controls -->
-                <!-- NEW LAYOUT: Wrapped in a new div to add checkbox below -->
-                <div class="space-y-4 mb-4">
-                    <!-- Original row for search and filter dropdown -->
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <input 
-                            type="text" 
-                            id="search-bar" 
-                            placeholder="Search by name, subject, or course #" 
-                            class="w-full md:w-2/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
+                <!-- MODIFIED LAYOUT: Replaced space-y-4 container with a single flex row -->
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <!-- Column 1: Search Bar -->
+                    <input 
+                        type="text" 
+                        id="search-bar" 
+                        placeholder="Search by name, subject, or course #" 
+                        class="w-full md:w-3/5 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                    
+                    <!-- Column 2: Filter + Checkbox -->
+                    <div class="w-full md:w-2/5 flex flex-col space-y-2 justify-center">
                         <!-- COMBINED ALL COURSES FILTER -->
-                        <select id="all-courses-filter" class="w-full md:w-1/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <select id="all-courses-filter" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
                             <option value="">Filter by School/Core Tag...</option>
                             <!-- Options populated by JavaScript -->
                         </select>
-                    </div>
-                    <!-- NEW: "Show only reviewed courses" checkbox -->
-                    <div class="flex items-center justify-end">
-                        <input 
-                            type="checkbox" 
-                            id="show-reviewed-only" 
-                            class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-400"
-                        >
-                        <label for="show-reviewed-only" class="ml-2 text-sm font-medium text-gray-300">
-                            Show only courses with reviews
-                        </label>
+                        
+                        <!-- "Show only reviewed courses" checkbox -->
+                        <div class="flex items-center justify-end">
+                            <input 
+                                type="checkbox" 
+                                id="show-reviewed-only" 
+                                class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-400"
+                            >
+                            <label for="show-reviewed-only" class="ml-2 text-sm font-medium text-gray-300">
+                                Show only courses with reviews
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -542,6 +545,18 @@
         }
 
         // --- GEMINI API FUNCTIONS ---
+
+        /**
+         * Debounce utility to prevent lag on search inputs
+         */
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
 
         /**
          * Fetches with exponential backoff for rate limiting.
@@ -1591,37 +1606,30 @@
                             authReady = true;
                             attachFirebaseListener();
                         }
-                    } else {
-                        console.log("Auth state changed: User is signed out.");
-                        authReady = false;
-                    }
-                });
-
-                // Sign in the user
-                if (typeof __initial_auth_token !== 'undefined') {
-                    console.log("Signing in with custom token...");
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    console.log("Signing in anonymously...");
-                    await signInAnonymously(auth);
-                }
-
-            } catch (error) {
-                console.error("Firebase initialization error:", error);
-                document.getElementById('all-courses-list').innerHTML += `
-                    <p class="text-red-400 text-center">Error connecting to Firebase.</p>
-                `;
             }
 
             // --- 3. Set up page event listeners ---
             
+            // --- Create debounced render functions ---
+            const debouncedRenderAllCourses = debounce((value) => {
+                renderAllCourses(value);
+            }, 300); // 300ms delay for all courses search
+        
+            const debouncedRenderLeaderboard = debounce(() => {
+                renderLeaderboard(document.getElementById('leaderboard-sort').value);
+            }, 300); // 300ms delay for leaderboard search
+
             // Search bar (All Courses)
-            document.getElementById('search-bar').addEventListener('input', (e) => renderAllCourses(e.target.value));
+            document.getElementById('search-bar').addEventListener('input', (e) => {
+                debouncedRenderAllCourses(e.target.value); // Use debounced function
+            });
             
             // Leaderboard controls
-            document.getElementById('leaderboard-sort').addEventListener('change', (e) => renderLeaderboard(e.target.value));
-            document.getElementById('leaderboard-filter').addEventListener('change', (e) => renderLeaderboard(document.getElementById('leaderboard-sort').value));
-            document.getElementById('leaderboard-search').addEventListener('input', (e) => renderLeaderboard(document.getElementById('leaderboard-sort').value));
+            document.getElementById('leaderboard-sort').addEventListener('change', (e) => renderLeaderboard(e.target.value)); // Keep immediate
+            document.getElementById('leaderboard-filter').addEventListener('change', (e) => renderLeaderboard(document.getElementById('leaderboard-sort').value)); // Keep immediate
+            document.getElementById('leaderboard-search').addEventListener('input', (e) => {
+                debouncedRenderLeaderboard(); // Use debounced function
+            });
 
 
             // Clicks on the main course list
