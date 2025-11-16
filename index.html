@@ -534,8 +534,20 @@
                     course.avgAttendance = (totalAttendance / course.reviewCount) * 100;
                     course.avgGpa = gpaCount > 0 ? (totalGpa / gpaCount) : -1;
 
-                    // Load the cached summary object
-                    course.ai_summary = reviewData.ai_summary || null;
+                    // --- FIX: Check if cached summary is a string (old format) or object (new format) ---
+                    if (reviewData.ai_summary && typeof reviewData.ai_summary === 'string') {
+                        // This is old data. Force invalidation by setting local state to null.
+                        // The next time the user opens the modal, it will auto-generate the correct JSON.
+                        course.ai_summary = null;
+                        console.warn(`Old summary data found for ${course.id}. Cache invalidated. New JSON summary will be generated.`);
+                        
+                        // Optionally: You could delete the field from Firebase here, but letting it overwrite 
+                        // on the next successful generation is safer for a hackathon.
+                        
+                    } else {
+                         // Load the cached summary object (if it's already the correct object format)
+                        course.ai_summary = reviewData.ai_summary || null;
+                    }
                 
                 } else {
                     // Reset if no reviews exist
@@ -1064,7 +1076,9 @@
                 if (summaryText) {
                     // --- FIX: Robust JSON Parsing ---
                     try {
-                        summaryObject = JSON.parse(summaryText);
+                        // Clean up the text by trimming whitespace or common model garbage
+                        const cleanedText = summaryText.trim().replace(/^```json|```$/g, '').trim(); 
+                        summaryObject = JSON.parse(cleanedText);
                     } catch (e) {
                         console.error("Failed to parse JSON from AI:", e);
                         console.log("Raw AI Response:", summaryText);
