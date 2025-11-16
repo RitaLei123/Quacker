@@ -390,7 +390,8 @@
 
         // --- SCHOOL DATA (FOR NEW TAG) ---
         const schoolData = [
-            { "name": "Humanities, Arts, and Social Sciences", "depts": [ { "code": "ARTS", "name": "Arts" }, { "code": "COGS", "name": "Cognitive Science" }, { "code": "COMM", "name": "Communication" }, { "code": "ECON", "name": "Economics" }, { "code": "GSAS", "name": "Games and Simulation Arts and Sciences" }, { "code": "IHSS", "name": "Interdisciplinary Humanities and Social Sciences" }, { "code": "INQR", "name": "HASS Inquiry" }, { "code": "LANG", "name": "Foreign Languages" }, { "code": "LITR", "name": "Literature" }, { "code": "PHIL", "name": "Philosophy" }, { "code": "PSYC", "name": "Psychology" }, { "code": "STSO", "name": "Science, Technology, and Society" }, { "code": "WRIT", "name": "Writing" } ] },
+            // --- FIX: Renamed the school to "HASS" ---
+            { "name": "HASS", "depts": [ { "code": "ARTS", "name": "Arts" }, { "code": "COGS", "name": "Cognitive Science" }, { "code": "COMM", "name": "Communication" }, { "code": "ECON", "name": "Economics" }, { "code": "GSAS", "name": "Games and Simulation Arts and Sciences" }, { "code": "IHSS", "name": "Interdisciplinary Humanities and Social Sciences" }, { "code": "INQR", "name": "HASS Inquiry" }, { "code": "LANG", "name": "Foreign Languages" }, { "code": "LITR", "name": "Literature" }, { "code": "PHIL", "name": "Philosophy" }, { "code": "PSYC", "name": "Psychology" }, { "code": "STSO", "name": "Science, Technology, and Society" }, { "code": "WRIT", "name": "Writing" } ] },
             { "name": "Interdisciplinary and Other", "depts": [ { "code": "ADMN", "name": "Administrative Courses" }, { "code": "USAF", "name": "Aerospace Studies (Air Force ROTC)" }, { "code": "USAR", "name": "Military Science (Army ROTC)" }, { "code": "USNA", "name": "Naval Science (Navy ROTC)" } ] },
             { "name": "Engineering", "depts": [ { "code": "BMED", "name": "Biomedical Engineering" }, { "code": "CHME", "name": "Chemical Engineering" }, { "code": "CIVL", "name": "Civil Engineering" }, { "code": "ECSE", "name": "Electrical, Computer, and Systems Engineering" }, { "code": "ENGR", "name": "General Engineering" }, { "code": "ENVE", "name": "Environmental Engineering" }, { "code": "ESCI", "name": "Engineering Science" }, { "code": "ISYE", "name": "Industrial and Systems Engineering" }, { "code": "MANE", "name": "Mechanical, Aerospace, and Nuclear Engineering" }, { "code": "MTLE", "name": "Materials Science and Engineering" } ] },
             { "name": "Architecture", "depts": [ { "code": "ARCH", "name": "Architecture" }, { "code": "LGHT", "name": "Lighting" } ] },
@@ -563,14 +564,11 @@
                     course.avgGpa = gpaCount > 0 ? (totalGpa / gpaCount) : -1;
 
                     // --- FIX: Check if cached summary is a string (old format) or object (new format) ---
-                    if (reviewData.ai_summary && typeof reviewData.ai_summary === 'string') {
-                        // This is old data. Force invalidation by setting local state to null.
-                        // The next time the user opens the modal, it will auto-generate the correct JSON.
+                    // This is the aggressive check to ensure only the new JSON format is accepted.
+                    if (reviewData.ai_summary && (typeof reviewData.ai_summary === 'string' || !reviewData.ai_summary.pros || !reviewData.ai_summary.cons)) {
+                        // This is old or corrupt data. Force invalidation by setting local state to null.
                         course.ai_summary = null;
-                        console.warn(`Old summary data found for ${course.id}. Cache invalidated. New JSON summary will be generated.`);
-                        
-                        // Optionally: You could delete the field from Firebase here, but letting it overwrite 
-                        // on the next successful generation is safer for a hackathon.
+                        console.warn(`Old/Corrupt summary data found for ${course.id}. Cache invalidated. New JSON summary will be generated.`);
                         
                     } else {
                          // Load the cached summary object (if it's already the correct object format)
