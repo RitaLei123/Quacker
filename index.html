@@ -431,8 +431,18 @@
 
         // Map for specific required tags (HASS, SCIENCE, MATH)
         const specificTagsMap = new Map();
-        ['ARTS', 'COGS', 'COMM', 'ECON', 'GSAS', 'IHSS', 'INQR', 'LANG', 'LITR', 'PHIL', 'PSYC', 'STSO', 'WRIT'].forEach(code => specificTagsMap.set(code, 'HASS'));
+        // --- NEW: Separate HASS into Humanities and Social Science categories ---
+        
+        // HUMANITIES Codes
+        ['ARTS', 'COGS', 'COMM', 'LANG', 'LITR', 'PHIL', 'WRIT'].forEach(code => specificTagsMap.set(code, 'HUMANITIES'));
+        
+        // SOCIAL SCIENCE Codes (includes IHSS and INQR as they fulfill that requirement space)
+        ['ECON', 'GSAS', 'PSYC', 'STSO', 'IHSS', 'INQR'].forEach(code => specificTagsMap.set(code, 'SOCIAL SCIENCE'));
+        
+        // SCIENCE Tag Codes
         ['ASTR', 'BCBP', 'BIOL', 'CHEM', 'CSCI', 'ERTH', 'ISCI', 'PHYS'].forEach(code => specificTagsMap.set(code, 'SCIENCE'));
+        
+        // MATH Tag Codes (MATH and MATP only)
         ['MATH', 'MATP'].forEach(code => specificTagsMap.set(code, 'MATH'));
 
 
@@ -446,13 +456,21 @@
             if (!allCoursesFilterElement || !leaderboardFilterElement) return;
 
             const schools = schoolData.map(s => s.name).sort();
-            const tags = ['HASS', 'SCIENCE', 'MATH'];
+            // --- UPDATED TAG LIST ---
+            const coreTags = ['HASS', 'SCIENCE', 'MATH']; 
+            const hassTags = ['HUMANITIES', 'SOCIAL SCIENCE']; 
             
-            // --- NEW: Populate Combined All Courses Filter ---
+            // --- Populate Combined All Courses Filter ---
             let allCoursesOptions = [`<option value="">Filter by School/Core Tag...</option>`];
 
             allCoursesOptions.push(`<optgroup label="Core Tags">`);
-            tags.forEach(tag => {
+            coreTags.forEach(tag => {
+                allCoursesOptions.push(`<option value="TAG-${tag}">${tag}</option>`);
+            });
+            allCoursesOptions.push(`</optgroup>`);
+
+            allCoursesOptions.push(`<optgroup label="HASS Categories">`); // NEW OPTGROUP
+            hassTags.forEach(tag => {
                 allCoursesOptions.push(`<option value="TAG-${tag}">${tag}</option>`);
             });
             allCoursesOptions.push(`</optgroup>`);
@@ -465,11 +483,17 @@
 
             allCoursesFilterElement.innerHTML = allCoursesOptions.join('');
             
-            // --- Leaderboard Filter (Remains the same) ---
+            // --- Leaderboard Filter (Updated to include new HASS tags) ---
             let leaderboardOptions = [`<option value="">Filter All</option>`];
             
             leaderboardOptions.push(`<optgroup label="Core Tags">`);
-            tags.forEach(tag => {
+            coreTags.forEach(tag => {
+                leaderboardOptions.push(`<option value="TAG-${tag}">${tag}</option>`);
+            });
+            leaderboardOptions.push(`</optgroup>`);
+
+            leaderboardOptions.push(`<optgroup label="HASS Categories">`); // NEW OPTGROUP
+            hassTags.forEach(tag => {
                 leaderboardOptions.push(`<option value="TAG-${tag}">${tag}</option>`);
             });
             leaderboardOptions.push(`</optgroup>`);
@@ -522,9 +546,14 @@
                     let tags = [];
                     tags.push(hasPrereqs ? 'Has Prereqs' : 'No Prereqs');
                     
+                    // Add specific tags (HUMANITIES, SOCIAL SCIENCE, SCIENCE, MATH)
                     const specificTag = specificTagsMap.get(cleanSubj);
                     if (specificTag) {
                         tags.push(specificTag);
+                        // If it is a HASS category, also add the main HASS tag for broader filtering
+                        if (specificTag === 'HUMANITIES' || specificTag === 'SOCIAL SCIENCE') {
+                            tags.push('HASS');
+                        }
                     }
 
                     const schoolName = subjectSchoolMap.get(cleanSubj);
@@ -706,6 +735,10 @@
                         color = 'bg-green-800 text-green-200';
                     } else if (tag === 'Has Prereqs') {
                         color = 'bg-yellow-800 text-yellow-200';
+                    } else if (tag === 'HUMANITIES') { // NEW COLOR
+                        color = 'bg-pink-800 text-pink-200'; 
+                    } else if (tag === 'SOCIAL SCIENCE') { // NEW COLOR
+                        color = 'bg-indigo-800 text-indigo-200'; 
                     } else if (tag === 'HASS') {
                         color = 'bg-purple-800 text-purple-200';
                     } else if (tag === 'SCIENCE' || tag === 'MATH') {
