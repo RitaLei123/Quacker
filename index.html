@@ -187,8 +187,6 @@
         let db; // Firestore database instance
         let auth; // Firebase auth instance
         let reviewsCollection; // Reference to the 'reviews' collection
-        // Use a static app ID for your project
-        const appId = 'rpi-course-explorer-data';
         let userId; // The user's ID
 
         const hassSubjects = [
@@ -405,7 +403,7 @@
                 return `
                 <li class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg transition-all hover:bg-gray-700">
                     <div class="flex items-center min-w-0">
-                        <span class="text-lg font-bold text-red-400 mr-3 w-8 text-center">${index + 1}</span>
+                        <span class="text-2xl font-bold text-red-400 mr-4 w-8 text-center">${index + 1}</span>
                         <div class="flex-grow min-w-0">
                             <span class="font-semibold text-white block truncate">${course.name}</span>
                             <span class="text-sm text-gray-400">${course.id} | ${course.reviewCount} review(s)</span>
@@ -435,8 +433,7 @@
 
             // Reset form
             document.getElementById('review-form').reset();
-            document.getElementById('submit-review-btn').disabled = false;
-            document.getElementById('submit-review-btn').textContent = 'Submit Review';
+            document.querySelector('input[name="review-attendance"][value="no"]').checked = true;
 
             // Show modal
             const modal = document.getElementById('review-modal');
@@ -450,6 +447,7 @@
             const modalContent = document.getElementById('review-modal-content');
             modal.classList.add('opacity-0');
             modalContent.classList.add('scale-95');
+            // Wait for transition to finish before hiding
             setTimeout(() => {
                 modal.classList.add('invisible');
             }, 250);
@@ -462,9 +460,8 @@
             submitBtn.textContent = 'Submitting...';
             
             // Get data from form
-            const courseId = document.getElementById('modal-course-hidden-id').value;
             const review = {
-                courseId: courseId,
+                courseId: document.getElementById('modal-course-hidden-id').value,
                 easiness: parseInt(document.getElementById('review-easiness').value),
                 usefulness: parseInt(document.getElementById('review-usefulness').value),
                 workload: parseInt(document.getElementById('review-workload').value),
@@ -474,44 +471,123 @@
             };
 
             try {
-                // Add the new review document to Firestore
+                // Save the new review to Firestore
                 await addDoc(reviewsCollection, review);
                 // The onSnapshot listener will automatically update the UI
                 closeReviewModal();
             } catch (error) {
-                console.error("Error adding review: ", error);
+                console.error("Error adding document: ", error);
+                alert("Could not save your review. Please try again.");
+            } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit Review';
-                // You could show an error message to the user here
             }
         }
 
         // --- EVENT HANDLERS ---
         function handleSearch(event) {
-            renderAllCourses(event.target.value);
+            const filterText = event.target.value;
+            renderAllCourses(filterText);
         }
 
         function handleLeaderboardSort(event) {
-            renderLeaderboard(event.target.value);
+            const sortBy = event.target.value;
+            renderLeaderboard(sortBy);
         }
 
         function handleListClick(event) {
             const reviewButton = event.target.closest('.review-btn');
             if (reviewButton) {
-                openReviewModal(reviewButton.dataset.id);
+                const id = reviewButton.dataset.id;
+                openReviewModal(id);
             }
         }
-        
+
         /**
-         * Loads all course data from the static catalog.json
+         * Sets up the real-time listener for reviews from Firestore.
          */
-        async function loadCourseCatalog() {
+        function setupReviewListener() {
+            // Path to the reviews collection
+            // We use a simple path "reviews"
+            reviewsCollection = collection(db, "reviews");
+            const q = query(reviewsCollection);
+
+            // onSnapshot listens for any changes in the database
+            onSnapshot(q, (querySnapshot) => {
+                const allReviews = [];
+                querySnapshot.forEach((doc) => {
+                    allReviews.push(doc.data());
+                });
+
+                // Recalculate all averages with the fresh data
+                calculateAllAverages(allReviews);
+
+                // Re-render both lists
+                const currentSort = document.getElementById('leaderboard-sort').value;
+                const currentSearch = document.getElementById('search-bar').value;
+                renderLeaderboard(currentSort);
+                renderAllCourses(currentSearch);
+
+            }, (error) => {
+                console.error("Error getting reviews from Firestore: ", error);
+                document.getElementById('all-courses-list').innerHTML = `
+                    <div class="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg">
+                        <h3 class="font-bold">Database Error</h3>
+                        <p>Could not load reviews. Check console for details.</p>
+                    </div>
+                `;
+            });
+        }
+
+        /**
+         * Initializes the application.
+         * @param {object} firebaseConfig - The Firebase config object.
+         */
+        async function init(firebaseConfig) {
+            // 1. Get DOM elements
+            const searchBar = document.getElementById('search-bar');
+            const allCoursesList = document.getElementById('all-courses-list');
+            const leaderboardSort = document.getElementById('leaderboard-sort');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const modal = document.getElementById('review-modal');
+            const reviewForm = document.getElementById('review-form');
+
+            // 2. Set up event listeners
+            searchBar.addEventListener('input', handleSearch);
+            leaderboardSort.addEventListener('change', handleLeaderboardSort);
+            allCoursesList.addEventListener('click', handleListClick);
+            modalCloseBtn.addEventListener('click', closeReviewModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'review-modal') closeReviewModal();
+            });
+            reviewForm.addEventListener('submit', handleSubmitReview);
+            
+            // 3. Set initial loading state
+            renderAllCourses(); // Will show loading spinner
+            renderLeaderboard(); // Will show loading spinner
+
             try {
+                // 4. Initialize Firebase
+                if (!firebaseConfig || !firebaseConfig.apiKey) {
+                    throw new Error("Firebase config is missing or incomplete.");
+                }
+
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // For more detailed logs in the console
+
+                // 5. Sign in the user anonymously
+                const userCredential = await signInAnonymously(auth);
+                userId = userCredential.user.uid;
+                console.log("Signed in anonymously as:", userId);
+
+                // 6. Fetch the course catalog
                 const response = await fetch('catalog.json');
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const courseData = await response.json();
 
-                // Process the raw data into the 'courses' array
+                // 7. Process catalog.json into the global 'courses' array
                 for (const id in courseData) {
                     const course = courseData[id];
                     if (course.subj && course.crse && course.name) {
@@ -526,98 +602,9 @@
                         });
                     }
                 }
-            } catch (error) {
-                console.error("Failed to load course data:", error);
-                const listElement = document.getElementById('all-courses-list');
-                listElement.innerHTML = `
-                    <div class="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg">
-                        <h3 class="font-bold">Error Loading Courses</h3>
-                        <p>Could not load <code class="bg-gray-800 px-1 rounded">catalog.json</code>. Make sure the file is in the same directory as this HTML file and the file name is correct.</p>
-                    </div>
-                `;
-            }
-        }
 
-        /**
-         * Sets up the real-time listener for reviews from Firestore.
-         */
-        function setupReviewListener() {
-            // Define the collection path
-            const reviewsPath = `/artifacts/${appId}/public/data/reviews`;
-            reviewsCollection = collection(db, reviewsPath);
-
-            // Create a query
-            const q = query(reviewsCollection);
-
-            // Set up the real-time listener
-            onSnapshot(q, (querySnapshot) => {
-                const allReviews = [];
-                querySnapshot.forEach((doc) => {
-                    allReviews.push(doc.data());
-                });
-                
-                // Recalculate all averages with the new data
-                calculateAllAverages(allReviews);
-
-                // Re-render everything
-                const currentSort = document.getElementById('leaderboard-sort').value;
-                const currentSearch = document.getElementById('search-bar').value;
-                renderLeaderboard(currentSort);
-                renderAllCourses(currentSearch);
-
-            }, (error) => {
-                console.error("Error listening to reviews: ", error);
-                // Handle error (e.g., show a message to the user)
-            });
-        }
-
-        /**
-         * Initializes the application.
-         * @param {object} firebaseConfig - The Firebase config object.
-         */
-        async function init(firebaseConfig) {
-            // 1. Get DOM elements
-            const searchBar = document.getElementById('search-bar');
-            const leaderboardSort = document.getElementById('leaderboard-sort');
-            const allCoursesList = document.getElementById('all-courses-list');
-            const modalCloseBtn = document.getElementById('modal-close-btn');
-            const modal = document.getElementById('review-modal');
-            const reviewForm = document.getElementById('review-form');
-
-            // 2. Render initial loading states
-            renderAllCourses();
-            renderLeaderboard();
-
-            // 3. Load the static course catalog
-            await loadCourseCatalog();
-            
-            // 4. Initialize Firebase
-            try {
-                if (!firebaseConfig || !firebaseConfig.apiKey) {
-                    throw new Error("Firebase config is missing or incomplete.");
-                }
-
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                setLogLevel('debug'); // Add this for more detailed logs
-
-                // 5. Sign in the user anonymously
-                await signInAnonymously(auth);
-                userId = auth.currentUser?.uid || `anon_${Math.random().toString(36).substring(2, 9)}`;
-
-                // 6. Set up event listeners
-                searchBar.addEventListener('input', handleSearch);
-                leaderboardSort.addEventListener('change', handleLeaderboardSort);
-                allCoursesList.addEventListener('click', handleListClick);
-                modalCloseBtn.addEventListener('click', closeReviewModal);
-                modal.addEventListener('click', (e) => {
-                    if (e.target.id === 'review-modal') closeReviewModal();
-                });
-                reviewForm.addEventListener('submit', handleSubmitReview);
-
-                // 7. Set up the real-time database listener
-                // This will trigger the first data load and re-render
+                // 8. Set up the real-time review listener
+                // This will also trigger the first data load and re-render
                 setupReviewListener();
 
             } catch (error) {
@@ -642,11 +629,13 @@
             // ===================================================================
             //
             // 1. Go to https://firebase.google.com/ and create a project.
-            // 2. Create a "Firestore Database" in "test mode" or set rules to `allow read, write: if true;`
-            // 3. Go to Project Settings -> Your apps -> Web app (</>).
-            // 4. Copy the 'firebaseConfig' object and paste it below.
+            // 2. Go to Build > Authentication > Get Started > Anonymous > Enable.
+            // 3. Go to Build > Firestore Database > Create database > Production Mode.
+            // 4. In Firestore, go to the "Rules" tab and change `allow read, write: if false;` to `if true;`
+            // 5. Go to Project Settings -> Your apps -> Web app (</>).
+            // 6. Copy the 'firebaseConfig' object and paste it below.
             
-            // Re-typed to remove any special/invisible characters
+            // This config is from the user's message, cleaned for syntax.
             const firebaseConfig = {
               apiKey: "AIzaSyB8ohAmH8dlBbafWBWdKG__0PIvMVgFmCg",
               authDomain: "quacker-81eeb.firebaseapp.com",
