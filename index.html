@@ -425,9 +425,8 @@
         const activeSummaryGenerations = new Set(); // Track active API calls
 
         // --- !! DATA CLEANUP FLAG !! ---
-        // Set this to true to force-regenerate ALL AI summaries.
-        // This will fix old errors, truncated text, and 1-review summaries.
-        // After one complete run (check Firebase), set this back to false to save tokens.
+        // This flag was used to force-regenerate all AI summaries to fix old data.
+        // It is now set to false to use the normal, token-saving logic.
         const FORCE_REGENERATE_ALL = false;
         // --- !! END FLAG !! ---
 
@@ -1468,13 +1467,7 @@
             `}).join('');
             
             // Re-attach listeners for dynamically added buttons
-            const reviewsListElement = document.getElementById(elementId);
-            reviewsListElement.querySelectorAll('.delete-review-btn').forEach(button => {
-                button.addEventListener('click', handleDeleteReviewClick);
-            });
-            reviewsListElement.querySelectorAll('.edit-review-btn').forEach(button => {
-                 button.addEventListener('click', handleEditReviewClick);
-            });
+            // REMOVED: This is now handled by event delegation in init()
         }
 
 
@@ -1690,6 +1683,35 @@
                 // Immediately open the review modal without trying to find and scroll the element
                 openReviewModal(courseId);
             });
+
+            // --- NEW: Event Delegation for dynamic review buttons ---
+            // Handles clicks on the "Edit" and "Delete" buttons in the review list
+            const reviewsList = document.getElementById('reviews-list');
+            if (reviewsList) {
+                reviewsList.addEventListener('click', (e) => {
+                    const editButton = e.target.closest('.edit-review-btn');
+                    if (editButton) {
+                        handleEditReviewClick(e);
+                        return;
+                    }
+                    
+                    const deleteButton = e.target.closest('.delete-review-btn');
+                    if (deleteButton) {
+                        handleDeleteReviewClick(e);
+                        return;
+                    }
+                });
+            }
+            
+            // Do the same for the leaderboard review list
+            const leaderboardReviewsList = document.getElementById('leaderboard-reviews-list');
+            if (leaderboardReviewsList) {
+                leaderboardReviewsList.addEventListener('click', (e) => {
+                    // Note: Leaderboard modal doesn't have edit/delete, but
+                    // this adds the pattern in case you add them later.
+                    // For now, it just clicks through.
+                });
+            }
         }
 
         // Start the application
