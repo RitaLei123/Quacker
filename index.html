@@ -49,6 +49,10 @@
         #leaderboard-list li {
             cursor: pointer;
         }
+        /* Custom styles for grade inputs */
+        .gpa-grid {
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+        }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
@@ -76,6 +80,7 @@
                             <option value="usefulness">Most Useful</option>
                             <option value="easiness">Easiest</option>
                             <option value="workload">Lightest Workload</option>
+                            <option value="grade">Highest Grade</option>
                         </select>
                     </div>
                 </div>
@@ -135,7 +140,7 @@
                 <!-- Details Section -->
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold text-gray-200 mb-3">Student Feedback (Averages)</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center gpa-grid">
                         <div>
                             <span class="text-2xl font-bold text-green-400" id="modal-avg-easiness">0.0</span>
                             <span class="block text-sm text-gray-400">Easiness</span>
@@ -150,7 +155,11 @@
                         </div>
                         <div>
                             <span class="text-2xl font-bold text-red-400" id="modal-avg-attendance">0%</span>
-                            <span class="block text-sm text-gray-400">Attendance Req.</span>
+                            <span class="block text-sm text-gray-400">Attendance</span>
+                        </div>
+                        <div>
+                            <span class="text-2xl font-bold text-purple-400" id="modal-avg-grade">N/A</span>
+                            <span class="block text-sm text-gray-400">Avg. Grade</span>
                         </div>
                     </div>
                 </div>
@@ -183,9 +192,15 @@
                                 <input type="number" id="review-workload" min="1" max="5" step="1" required class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white">
                             </div>
                         </div>
-                        <div>
-                            <label for="review-professor" class="block text-sm font-medium text-gray-300">Professor (Optional)</label>
-                            <input type="text" id="review-professor" placeholder="e.g., Barbara Cutler" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="review-professor" class="block text-sm font-medium text-gray-300">Professor (Optional)</label>
+                                <input type="text" id="review-professor" placeholder="e.g., Barbara Cutler" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white">
+                            </div>
+                            <div>
+                                <label for="review-grade" class="block text-sm font-medium text-gray-300">Grade Rec'd (Optional)</label>
+                                <input type="text" id="review-grade" placeholder="e.g., A, B+, C" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white">
+                            </div>
                         </div>
                         <div>
                             <label for="review-comment" class="block text-sm font-medium text-gray-300">Comment</label>
@@ -232,7 +247,7 @@
                 <!-- Details Section -->
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold text-gray-200 mb-3">Student Feedback (Averages)</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center gpa-grid">
                         <div>
                             <span class="text-2xl font-bold text-green-400" id="details-modal-avg-easiness">0.0</span>
                             <span class="block text-sm text-gray-400">Easiness</span>
@@ -247,7 +262,11 @@
                         </div>
                         <div>
                             <span class="text-2xl font-bold text-red-400" id="details-modal-avg-attendance">0%</span>
-                            <span class="block text-sm text-gray-400">Attendance Req.</span>
+                            <span class="block text-sm text-gray-400">Attendance</span>
+                        </div>
+                        <div>
+                            <span class="text-2xl font-bold text-purple-400" id="details-modal-avg-grade">N/A</span>
+                            <span class="block text-sm text-gray-400">Avg. Grade</span>
                         </div>
                     </div>
                 </div>
@@ -283,8 +302,44 @@
             'IHSS', 'INQR', 'LANG', 'LITR', 'PHIL', 
             'PSYC', 'STSO', 'WRIT'
         ];
+        
+        // Grade to GPA conversion map
+        const gradeMap = {
+            'A': 4.0, 'A-': 3.67, 'B+': 3.33, 'B': 3.0, 'B-': 2.67,
+            'C+': 2.33, 'C': 2.0, 'C-': 1.67, 'D+': 1.33, 'D': 1.0, 'F': 0.0
+        };
+        // GPA to Grade conversion (for finding the *closest* letter grade)
+        const gpaMap = [
+            { gpa: 4.0, grade: 'A' }, { gpa: 3.67, grade: 'A-' }, { gpa: 3.33, grade: 'B+' },
+            { gpa: 3.0, grade: 'B' }, { gpa: 2.67, grade: 'B-' }, { gpa: 2.33, grade: 'C+' },
+            { gpa: 2.0, grade: 'C' }, { gpa: 1.67, grade: 'C-' }, { gpa: 1.33, grade: 'D+' },
+            { gpa: 1.0, grade: 'D' }, { gpa: 0.0, grade: 'F' }
+        ];
 
         // --- CORE LOGIC ---
+        
+        /**
+         * Converts a letter grade (e.g., "A-") to its GPA value.
+         * @param {string} grade - The letter grade.
+         * @returns {number | null} The GPA value or null if invalid.
+         */
+        function convertGradeToGpa(grade) {
+            if (!grade) return null;
+            return gradeMap[grade.toUpperCase().trim()] ?? null;
+        }
+
+        /**
+         * Converts a GPA value back to the *closest* letter grade.
+         * @param {number} gpa - The average GPA.
+         * @returns {string} The closest letter grade (e.GET. "B+").
+         */
+        function convertGpaToGrade(gpa) {
+            if (gpa === null || isNaN(gpa)) return 'N/A';
+            // Find the grade with the minimum difference from the calculated GPA
+            return gpaMap.reduce((prev, curr) => {
+                return (Math.abs(curr.gpa - gpa) < Math.abs(prev.gpa - gpa) ? curr : prev);
+            }).grade;
+        }
 
         /**
          * A utility function to delay execution of a function until after a pause in events.
@@ -342,6 +397,7 @@
                 course.avgUsefulness = 0.0;
                 course.avgWorkload = 0.0;
                 course.avgAttendance = 0;
+                course.avgGpa = null; // Use null for no data
                 course.reviewCount = 0;
                 reviewMap.set(course.id, course);
             });
@@ -350,6 +406,8 @@
             allReviews.forEach(review => {
                 const course = reviewMap.get(review.courseId);
                 if (course) {
+                    // Also convert the grade to GPA *before* storing
+                    review.gpa = convertGradeToGpa(review.grade);
                     course.reviews.push(review);
                 }
             });
@@ -357,11 +415,20 @@
             // 3. Calculate new averages for all courses
             courses.forEach(course => {
                 if (course.reviews.length > 0) {
+                    let gpaSum = 0;
+                    let gpaCount = 0;
+                    
                     const total = course.reviews.reduce((acc, review) => {
                         acc.easiness += review.easiness;
                         acc.usefulness += review.usefulness;
                         acc.workload += review.workload;
                         acc.attendance += (review.attendance === 'yes' ? 1 : 0);
+                        
+                        // Handle GPA calculation separately
+                        if (review.gpa !== null && !isNaN(review.gpa)) {
+                            gpaSum += review.gpa;
+                            gpaCount++;
+                        }
                         return acc;
                     }, { easiness: 0, usefulness: 0, workload: 0, attendance: 0 });
 
@@ -371,6 +438,11 @@
                     course.avgUsefulness = total.usefulness / n;
                     course.avgWorkload = total.workload / n;
                     course.avgAttendance = (total.attendance / n) * 100;
+                    
+                    // Set average GPA if we have data
+                    if (gpaCount > 0) {
+                        course.avgGpa = gpaSum / gpaCount;
+                    }
                 }
             });
         }
@@ -433,6 +505,7 @@
                             <span>Easiness: <strong class="text-green-400">${course.avgEasiness.toFixed(1)}</strong></span>
                             <span>Usefulness: <strong class="text-blue-400">${course.avgUsefulness.toFixed(1)}</strong></span>
                             <span>Workload: <strong class="text-yellow-400">${course.avgWorkload.toFixed(1)}</strong></span>
+                            <span>Grade: <strong class="text-purple-400">${convertGpaToGrade(course.avgGpa)}</strong></span>
                             <span>(${course.reviewCount} reviews)</span>
                         </div>
                     </div>
@@ -482,14 +555,16 @@
                 .sort((a, b) => { // Apply sorting
                     switch (sortBy) {
                         case 'easiness':
-                            // Higher score is better
                             return b.avgEasiness - a.avgEasiness;
                         case 'workload':
-                            // Lower score is better
                             return a.avgWorkload - b.avgWorkload; 
+                        case 'grade':
+                            // Filter out nulls for grade sorting
+                            const aGpa = a.avgGpa ?? -1;
+                            const bGpa = b.avgGpa ?? -1;
+                            return bGpa - aGpa;
                         case 'usefulness':
                         default:
-                            // Higher score is better
                             return b.avgUsefulness - a.avgUsefulness;
                     }
                 })
@@ -510,6 +585,10 @@
                     case 'workload':
                         score = course.avgWorkload.toFixed(1);
                         scoreColor = 'text-yellow-400';
+                        break;
+                    case 'grade':
+                        score = convertGpaToGrade(course.avgGpa);
+                        scoreColor = 'text-purple-400';
                         break;
                     case 'usefulness':
                     default:
@@ -551,6 +630,7 @@
             document.getElementById('modal-avg-usefulness').textContent = course.avgUsefulness.toFixed(1);
             document.getElementById('modal-avg-workload').textContent = course.avgWorkload.toFixed(1);
             document.getElementById('modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
+            document.getElementById('modal-avg-grade').textContent = convertGpaToGrade(course.avgGpa);
 
             // Populate comments list (pass the read/write comments list)
             populateCommentsList(course, document.getElementById('modal-comments-list'));
@@ -605,6 +685,7 @@
             document.getElementById('details-modal-avg-usefulness').textContent = course.avgUsefulness.toFixed(1);
             document.getElementById('details-modal-avg-workload').textContent = course.avgWorkload.toFixed(1);
             document.getElementById('details-modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
+            document.getElementById('details-modal-avg-grade').textContent = convertGpaToGrade(course.avgGpa);
 
             // Populate comments list (pass the read-only comments list)
             populateCommentsList(course, document.getElementById('details-modal-comments-list'));
@@ -674,7 +755,7 @@
                     <p class="text-white text-sm mb-2">${review.comment || 'No comment provided.'}</p>
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-400">
-                            Professor: <strong class="text-gray-300">${review.professor || 'N/A'}</strong>
+                            Prof: <strong class="text-gray-300">${review.professor || 'N/A'}</strong>
                             ${reviewDate ? `| <span class="italic">${reviewDate} ${isEdited ? '(edited)' : ''}</span>` : ''}
                         </span>
                         <!-- Show buttons only if it's the user's review AND it's the main review modal -->
@@ -690,6 +771,7 @@
                         <span class="text-blue-300">Usefulness: ${review.usefulness}</span>
                         <span class="text-yellow-300">Workload: ${review.workload}</span>
                         <span class="text-red-300">Attendance: ${review.attendance === 'yes' ? 'Yes' : 'No'}</span>
+                        <span class="text-purple-300">Grade: ${review.grade || 'N/A'}</span>
                     </div>
                 </div>
                 `);
@@ -704,6 +786,19 @@
             const editingReviewId = document.getElementById('editing-review-id').value;
             submitBtn.textContent = editingReviewId ? 'Updating...' : 'Submitting...';
             
+            const gradeInput = document.getElementById('review-grade').value.trim().toUpperCase();
+            
+            // Validate grade input
+            if (gradeInput && !(gradeInput in gradeMap)) {
+                console.error("Invalid grade. Please enter A, A-, B+, etc.");
+                // We'd show a real error message here, but for now, we'll log and stop
+                submitBtn.disabled = false;
+                submitBtn.textContent = editingReviewId ? 'Update Review' : 'Submit Review';
+                // This is a good place for a small, non-alert error message
+                document.getElementById('review-grade').focus();
+                return;
+            }
+
             // Get data from form
             const reviewData = {
                 courseId: document.getElementById('modal-course-hidden-id').value,
@@ -713,6 +808,7 @@
                 attendance: document.querySelector('input[name="review-attendance"]:checked').value,
                 professor: document.getElementById('review-professor').value || '',
                 comment: document.getElementById('review-comment').value,
+                grade: gradeInput || '', // Save the valid grade or an empty string
                 userId: userId // Always include userId
             };
 
@@ -805,14 +901,14 @@
                     const courseId = document.getElementById('modal-course-hidden-id').value;
                     if (courseId) {
                         const course = courses.find(c => c.id === courseId);
-                        populateCommentsList(course, document.getElementById('modal-comments-list'));
+                        openReviewModal(courseId); // Re-open to refresh all data
                     }
                 }
                 if (detailsModalOpen) {
                     const courseId = document.getElementById('details-modal-course-id').textContent;
                     if (courseId) {
                         const course = courses.find(c => c.id === courseId);
-                        populateCommentsList(course, document.getElementById('details-modal-comments-list'));
+                        openDetailsModal(courseId); // Re-open to refresh all data
                     }
                 }
 
@@ -862,7 +958,7 @@
             // Click listeners for lists
             allCoursesList.addEventListener('click', handleListClick);
             leaderboardList.addEventListener('click', handleLeaderboardClick);
-            
+
             // Review Modal Listeners
             modalCloseBtn.addEventListener('click', closeReviewModal);
             modal.addEventListener('click', (e) => {
@@ -993,6 +1089,7 @@
                 const attendanceValue = review.attendance || 'no'; // Default to 'no' if not set
                 document.querySelector(`input[name="review-attendance"][value="${attendanceValue}"]`).checked = true;
                 document.getElementById('review-professor').value = review.professor || '';
+                document.getElementById('review-grade').value = review.grade || '';
                 document.getElementById('review-comment').value = review.comment || '';
                 
                 // Set the editing ID
@@ -1030,7 +1127,7 @@
               measurementId: "G-50JFZRHV33"
             };
 
-            // ===================================================================
+            // =================================G-50JFZRHV33==================================
             // === (No need to edit below this line) ===
             // ===================================================================
 
