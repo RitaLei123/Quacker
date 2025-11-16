@@ -110,19 +110,33 @@
                     All Courses
                 </h2>
                 <!-- Search and Filter Controls -->
-                <!-- NEW LAYOUT: Search bar takes 2/3 space on medium screens, filter takes 1/3 -->
-                <div class="flex flex-col md:flex-row gap-4 mb-4">
-                    <input 
-                        type="text" 
-                        id="search-bar" 
-                        placeholder="Search by name, subject, or course #" 
-                        class="w-full md:w-2/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                    <!-- COMBINED ALL COURSES FILTER -->
-                    <select id="all-courses-filter" class="w-full md:w-1/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <option value="">Filter by School/Core Tag...</option>
-                        <!-- Options populated by JavaScript -->
-                    </select>
+                <!-- NEW LAYOUT: Wrapped in a new div to add checkbox below -->
+                <div class="space-y-4 mb-4">
+                    <!-- Original row for search and filter dropdown -->
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <input 
+                            type="text" 
+                            id="search-bar" 
+                            placeholder="Search by name, subject, or course #" 
+                            class="w-full md:w-2/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                        <!-- COMBINED ALL COURSES FILTER -->
+                        <select id="all-courses-filter" class="w-full md:w-1/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="">Filter by School/Core Tag...</option>
+                            <!-- Options populated by JavaScript -->
+                        </select>
+                    </div>
+                    <!-- NEW: "Show only reviewed courses" checkbox -->
+                    <div class="flex items-center justify-end">
+                        <input 
+                            type="checkbox" 
+                            id="show-reviewed-only" 
+                            class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-400"
+                        >
+                        <label for="show-reviewed-only" class="ml-2 text-sm font-medium text-gray-300">
+                            Show only courses with reviews
+                        </label>
+                    </div>
                 </div>
 
                 <div id="all-courses-list" class="max-h-[65vh] overflow-y-auto space-y-3 pr-2">
@@ -921,6 +935,8 @@
 
             const lowerFilter = filterText.toLowerCase().trim();
             const allCoursesFilterValue = document.getElementById('all-courses-filter').value;
+            // NEW: Get checkbox value
+            const showReviewedOnly = document.getElementById('show-reviewed-only').checked;
             
             let filterType = '';
             let filterTerm = '';
@@ -949,7 +965,13 @@
                     }
                 }
 
-                return searchMatch && combinedMatch;
+                // 3. NEW: Show Reviewed Only Filter
+                let reviewedMatch = true;
+                if (showReviewedOnly) {
+                    reviewedMatch = course.reviewCount > 0;
+                }
+
+                return searchMatch && combinedMatch && reviewedMatch;
             });
 
             filteredCourses.sort((a, b) => {
@@ -1540,6 +1562,11 @@
             
             // All Courses Listeners
             document.getElementById('all-courses-filter').addEventListener('change', () => {
+                const currentSearch = document.getElementById('search-bar').value;
+                renderAllCourses(currentSearch);
+            });
+            // NEW: Add listener for the checkbox
+            document.getElementById('show-reviewed-only').addEventListener('change', () => {
                 const currentSearch = document.getElementById('search-bar').value;
                 renderAllCourses(currentSearch);
             });
