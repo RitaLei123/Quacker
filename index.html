@@ -117,7 +117,7 @@
                         type="text" 
                         id="search-bar" 
                         placeholder="Search by name, subject, or course #" 
-                        class="w-full md:w-3/5 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        class="w-full md:w-3/5 p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
                     >
                     
                     <!-- Column 2: Filter + Checkbox -->
@@ -1606,6 +1606,26 @@
                             authReady = true;
                             attachFirebaseListener();
                         }
+                    } else { // <-- Added this back
+                        console.log("Auth state changed: User is signed out."); // <-- Added this back
+                        authReady = false; // <-- Added this back
+                    } // <-- Added this back
+                }); // <-- FIX: Added missing });
+
+                // --- FIX: Re-added missing sign-in logic ---
+                if (typeof __initial_auth_token !== 'undefined') {
+                    console.log("Signing in with custom token...");
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    console.log("Signing in anonymously...");
+                    await signInAnonymously(auth);
+                }
+
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                document.getElementById('all-courses-list').innerHTML += `
+                    <p class="text-red-400 text-center">Error connecting to Firebase.</p>
+                `;
             }
 
             // --- 3. Set up page event listeners ---
