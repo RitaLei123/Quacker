@@ -1239,7 +1239,8 @@
 
             // Reset Form and render reviews
             resetReviewForm();
-            renderReviewsList(course.reviews, 'reviews-list');
+            // FIX: Pass course.id directly into the function
+            renderReviewsList(course.reviews, 'reviews-list', course.id);
 
             // --- Show Modal ---
             const modal = document.getElementById('review-modal');
@@ -1291,7 +1292,8 @@
             document.getElementById('go-to-review-btn').dataset.id = course.id;
             
             // Render Reviews
-            renderReviewsList(course.reviews, 'leaderboard-reviews-list');
+            // FIX: Pass course.id directly into the function
+            renderReviewsList(course.reviews, 'leaderboard-reviews-list', course.id);
             
             // --- Show Modal ---
             const modal = document.getElementById('leaderboard-modal');
@@ -1402,7 +1404,7 @@
         /**
          * Renders the list of individual reviews in a modal (Newest First), including action buttons.
          */
-        function renderReviewsList(reviews, elementId) {
+        function renderReviewsList(reviews, elementId, courseId) { // FIX: Added courseId parameter
             const listElement = document.getElementById(elementId);
             if (!reviews || reviews.length === 0) {
                 listElement.innerHTML = `<p class="text-gray-400 text-sm italic">No reviews yet for this course.</p>`;
@@ -1412,8 +1414,7 @@
             // Sort reviews by timestamp, newest first
             const sortedReviews = [...reviews].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            const courseId = document.getElementById('modal-course-hidden-id').value || document.getElementById('go-to-review-btn').dataset.id;
-
+            // REMOVED: const courseId = ... (No longer need to read from DOM)
 
             listElement.innerHTML = sortedReviews.map((review, index) => {
                 // Format the timestamp
@@ -1704,13 +1705,10 @@
             }
             
             // Do the same for the leaderboard review list
+            // FIX: Removed this redundant listener.
             const leaderboardReviewsList = document.getElementById('leaderboard-reviews-list');
             if (leaderboardReviewsList) {
-                leaderboardReviewsList.addEventListener('click', (e) => {
-                    // Note: Leaderboard modal doesn't have edit/delete, but
-                    // this adds the pattern in case you add them later.
-                    // For now, it just clicks through.
-                });
+                // This list has no buttons, so no listener is needed.
             }
         }
 
