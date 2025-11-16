@@ -25,11 +25,11 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #6b7280; /* gray-500 */
         }
-        /* Style for the modal */
-        #review-modal, #details-modal {
+        /* Style for the modals */
+        .modal {
             transition: opacity 0.25s ease, visibility 0.25s ease;
         }
-        #review-modal-content, #details-modal-content {
+        .modal-content {
             transition: transform 0.25s ease;
         }
         /* Simple spinner for loading state */
@@ -44,14 +44,6 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-        /* Ensure leaderboard items are clickable */
-        #leaderboard-list li {
-            cursor: pointer;
-        }
-        /* Custom styles for grade inputs */
-        .gpa-grid {
-            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
         }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
@@ -70,28 +62,26 @@
             
             <!-- Left Column: Leaderboard -->
             <div class="lg:col-span-1 bg-gray-800 p-6 rounded-xl shadow-2xl">
-                <!-- Leaderboard Header -->
-                <div class="border-b border-gray-700 pb-2 mb-4">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-2xl font-semibold text-white">
-                            Leaderboards
-                        </h2>
-                        <select id="leaderboard-sort" class="bg-gray-700 text-white text-sm rounded-md p-1 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+                <h2 class="text-2xl font-semibold text-white border-b border-gray-700 pb-2 mb-4">
+                    Leaderboards
+                </h2>
+                <!-- Leaderboard Controls -->
+                <div class="space-y-4 mb-4">
+                    <div>
+                        <label for="leaderboard-sort" class="block text-sm font-medium text-gray-300">Sort by</label>
+                        <select id="leaderboard-sort" class="w-full mt-1 bg-gray-700 text-white text-sm rounded-md p-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500">
                             <option value="usefulness">Most Useful</option>
                             <option value="easiness">Easiest</option>
                             <option value="workload">Lightest Workload</option>
-                            <option value="grade">Highest Grade</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="leaderboard-school" class="block text-sm font-medium text-gray-300">Filter by School</label>
+                        <select id="leaderboard-school" class="w-full mt-1 bg-gray-700 text-white text-sm rounded-md p-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <!-- Options will be populated by JS -->
                         </select>
                     </div>
                 </div>
-                <!-- Leaderboard Filters -->
-                <div class="grid grid-cols-1 gap-4 mb-4">
-                    <label for="leaderboard-school-filter" class="text-sm font-medium text-gray-300">Filter by School</label>
-                    <select id="leaderboard-school-filter" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <!-- Options will be added by JS -->
-                    </select>
-                </div>
-                <!-- Leaderboard List -->
                 <ol id="leaderboard-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                     <!-- Leaderboard items will be injected here by JavaScript -->
                 </ol>
@@ -102,27 +92,26 @@
                 <h2 class="text-2xl font-semibold mb-4 border-b border-gray-700 pb-2 text-white">
                     All Courses
                 </h2>
-                <!-- All Courses Filters -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- All Courses Controls -->
+                <div class="space-y-4 mb-4">
                     <input 
                         type="text" 
                         id="search-bar" 
-                        placeholder="Search by name, subject, or course #" 
-                        class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 md:col-span-2"
+                        placeholder="Search by name, subject (e.g., CSCI), or course #" 
+                        class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
                     >
                     <div>
-                        <label for="all-courses-school-filter" class="text-sm font-medium text-gray-300">Filter by School</label>
-                        <select id="all-courses-school-filter" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <!-- Options will be added by JS -->
+                        <label for="all-courses-school" class="block text-sm font-medium text-gray-300">Filter by School</label>
+                        <select id="all-courses-school" class="w-full mt-1 bg-gray-700 text-white text-sm rounded-md p-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <!-- Options will be populated by JS -->
                         </select>
                     </div>
-                    <div class="flex items-end justify-start md:justify-end pb-1">
-                        <label class="flex items-center space-x-2 text-sm text-gray-300">
-                            <input type="checkbox" id="all-courses-reviewed-filter" class="form-checkbox bg-gray-700 border-gray-600 text-red-500 rounded focus:ring-red-400">
-                            <span>Show reviewed courses only</span>
-                        </label>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="show-reviewed-only" class="h-4 w-4 text-red-600 bg-gray-700 border-gray-600 rounded focus:ring-red-500">
+                        <label for="show-reviewed-only" class="ml-2 block text-sm text-gray-300">Show reviewed courses only</label>
                     </div>
                 </div>
+                
                 <div id="all-courses-list" class="max-h-[65vh] overflow-y-auto space-y-3 pr-2">
                     <!-- Course list will be injected here by JavaScript -->
                 </div>
@@ -130,9 +119,9 @@
         </main>
     </div>
 
-    <!-- Review Modal (for adding/editing reviews) -->
-    <div id="review-modal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-4 invisible opacity-0 z-50">
-        <div id="review-modal-content" class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-700 transform scale-95">
+    <!-- Review Modal (for "All Courses" list) -->
+    <div id="review-modal" class="modal fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-4 invisible opacity-0 z-50">
+        <div id="review-modal-content" class="modal-content bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-700 transform scale-95">
             <!-- Modal Header -->
             <div class="flex justify-between items-center p-6 border-b border-gray-700">
                 <div>
@@ -146,10 +135,30 @@
 
             <!-- Modal Body -->
             <div class="p-6 max-h-[70vh] overflow-y-auto">
+                
+                <!-- Official Course Info -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-200 mb-2">Official Course Information</h3>
+                    <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-400">Description</h4>
+                            <p id="modal-course-desc" class="text-sm text-gray-300 mt-1">Loading...</p>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-400">Prerequisites</h4>
+                            <p id="modal-course-prereqs" class="text-sm text-gray-300 mt-1">Loading...</p>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-400">Offered</h4>
+                            <p id="modal-course-offered" class="text-sm text-gray-300 mt-1">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Details Section -->
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold text-gray-200 mb-3">Student Feedback (Averages)</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center gpa-grid">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                         <div>
                             <span class="text-2xl font-bold text-green-400" id="modal-avg-easiness">0.0</span>
                             <span class="block text-sm text-gray-400">Easiness</span>
@@ -164,10 +173,10 @@
                         </div>
                         <div>
                             <span class="text-2xl font-bold text-red-400" id="modal-avg-attendance">0%</span>
-                            <span class="block text-sm text-gray-400">Attendance</span>
+                            <span class="block text-sm text-gray-400">Attendance Req.</span>
                         </div>
                         <div>
-                            <span class="text-2xl font-bold text-purple-400" id="modal-avg-grade">N/A</span>
+                            <span class="text-2xl font-bold text-cyan-400" id="modal-avg-grade">N/A</span>
                             <span class="block text-sm text-gray-400">Avg. Grade</span>
                         </div>
                     </div>
@@ -208,12 +217,12 @@
                             </div>
                             <div>
                                 <label for="review-grade" class="block text-sm font-medium text-gray-300">Grade Rec'd (Optional)</label>
-                                <input type="text" id="review-grade" placeholder="e.g., A, B+, C" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white">
+                                <input type="text" id="review-grade" placeholder="e.g., A-" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white">
                             </div>
                         </div>
                         <div>
                             <label for="review-comment" class="block text-sm font-medium text-gray-300">Comment</label>
-                            <textarea id="review-comment" rows="3" placeholder="e.g., How was the workload? How many exams? Was the professor helpful?" required class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white"></textarea>
+                            <textarea id="review-comment" rows="3" placeholder="How was the course? (e.g., assignments, exams, teaching style)" required class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white"></textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300">Attendance Required?</label>
@@ -228,7 +237,7 @@
                                 </label>
                             </div>
                         </div>
-                        <button type="submit" id="submit-review-btn" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:from-red-700 hover:to-red-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button typeD="submit" id="submit-review-btn" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:from-red-700 hover:to-red-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
                             Submit Review
                         </button>
                     </form>
@@ -236,55 +245,75 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Leaderboard Details Modal (Read-Only) -->
-    <div id="details-modal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-4 invisible opacity-0 z-50">
-        <div id="details-modal-content" class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-700 transform scale-95">
+    <div id="leaderboard-modal" class="modal fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-4 invisible opacity-0 z-50">
+        <div id="leaderboard-modal-content" class="modal-content bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-700 transform scale-95">
             <!-- Modal Header -->
             <div class="flex justify-between items-center p-6 border-b border-gray-700">
                 <div>
-                    <h2 id="details-modal-course-name" class="text-2xl font-semibold text-white">Course Name</h2>
-                    <p id="details-modal-course-id" class="text-gray-400">COURSE-ID</p>
+                    <h2 id="l-modal-course-name" class="text-2xl font-semibold text-white">Course Name</h2>
+                    <p id="l-modal-course-id" class="text-gray-400">COURSE-ID</p>
                 </div>
-                <button id="details-modal-close-btn" class="text-gray-400 hover:text-white transition-colors">
+                <button id="l-modal-close-btn" class="text-gray-400 hover:text-white transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
-            <!-- Modal Body (Read-Only) -->
+            <!-- Modal Body -->
             <div class="p-6 max-h-[70vh] overflow-y-auto">
+                
+                <!-- Official Course Info -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-200 mb-2">Official Course Information</h3>
+                    <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-400">Description</h4>
+                            <p id="l-modal-course-desc" class="text-sm text-gray-300 mt-1">Loading...</p>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-400">Prerequisites</h4>
+                            <p id="l-modal-course-prereqs" class="text-sm text-gray-300 mt-1">Loading...</p>
+                        </div>
+                         <div>
+                            <h4 class="text-sm font-semibold text-gray-400">Offered</h4>
+                            <p id="l-modal-course-offered" class="text-sm text-gray-300 mt-1">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Details Section -->
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold text-gray-200 mb-3">Student Feedback (Averages)</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center gpa-grid">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                         <div>
-                            <span class="text-2xl font-bold text-green-400" id="details-modal-avg-easiness">0.0</span>
+                            <span class="text-2xl font-bold text-green-400" id="l-modal-avg-easiness">0.0</span>
                             <span class="block text-sm text-gray-400">Easiness</span>
                         </div>
                         <div>
-                            <span class="text-2xl font-bold text-blue-400" id="details-modal-avg-usefulness">0.0</span>
+                            <span class="text-2xl font-bold text-blue-400" id="l-modal-avg-usefulness">0.0</span>
                             <span class="block text-sm text-gray-400">Usefulness</span>
                         </div>
                         <div>
-                            <span class="text-2xl font-bold text-yellow-400" id="details-modal-avg-workload">0.0</span>
+                            <span class="text-2xl font-bold text-yellow-400" id="l-modal-avg-workload">0.0</span>
                             <span class="block text-sm text-gray-400">Workload</span>
                         </div>
                         <div>
-                            <span class="text-2xl font-bold text-red-400" id="details-modal-avg-attendance">0%</span>
-                            <span class="block text-sm text-gray-400">Attendance</span>
+                            <span class="text-2xl font-bold text-red-400" id="l-modal-avg-attendance">0%</span>
+                            <span class="block text-sm text-gray-400">Attendance Req.</span>
                         </div>
                         <div>
-                            <span class="text-2xl font-bold text-purple-400" id="details-modal-avg-grade">N/A</span>
+                            <span class="text-2xl font-bold text-cyan-400" id="l-modal-avg-grade">N/A</span>
                             <span class="block text-sm text-gray-400">Avg. Grade</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Student Comments Section (Read-Only) -->
-                <div>
+                <!-- Student Comments Section -->
+                <div class="mb-6">
                     <h3 class="text-lg font-semibold text-gray-200 mb-3 border-t border-gray-700 pt-6">Student Comments</h3>
-                    <div id="details-modal-comments-list" class="space-y-3 max-h-48 overflow-y-auto pr-2">
-                        <!-- Read-only comments will be injected here by JavaScript -->
+                    <div id="l-modal-comments-list" class="space-y-3 max-h-48 overflow-y-auto pr-2">
+                        <!-- Individual comments will be injected here by JavaScript -->
                     </div>
                 </div>
             </div>
@@ -300,69 +329,59 @@
         import { getFirestore, collection, addDoc, query, onSnapshot, setLogLevel, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBAL STATE ---
-        let courses = []; // This will hold all courses from catalog.json
+        let courses = []; // This will hold all courses from catalogs
+        let prereqGraph = {}; // This will hold the prereq graph
         let db; // Firestore database instance
         let auth; // Firebase auth instance
         let reviewsCollection; // Reference to the 'reviews' collection
         let userId; // The user's ID
-        
-        // This is the school data provided by the user
-        const schoolData = [
-            { "name": "Humanities, Arts, and Social Sciences", "depts": [ { "code": "ARTS", "name": "Arts" }, { "code": "COGS", "name": "Cognitive Science" }, { "code": "COMM", "name": "Communication" }, { "code": "ECON", "name": "Economics" }, { "code": "GSAS", "name": "Games and Simulation Arts and Sciences" }, { "code": "IHSS", "name": "Interdisciplinary Humanities and Social Sciences" }, { "code": "INQR", "name": "HASS Inquiry" }, { "code": "LANG", "name": "Foreign Languages" }, { "code": "LITR", "name": "Literature" }, { "code": "PHIL", "name": "Philosophy" }, { "code": "PSYC", "name": "Psychology" }, { "code": "STSO", "name": "Science, Technology, and Society" }, { "code": "WRIT", "name": "Writing" } ] },
-            { "name": "Interdisciplinary and Other", "depts": [ { "code": "ADMN", "name": "Administrative Courses" }, { "code": "USAF", "name": "Aerospace Studies (Air Force ROTC)" }, { "code": "USAR", "name": "Military Science (Army ROTC)" }, { "code": "USNA", "name": "Naval Science (Navy ROTC)" } ] },
-            { "name": "Engineering", "depts": [ { "code": "BMED", "name": "Biomedical Engineering" }, { "code": "CHME", "name": "Chemical Engineering" }, { "code": "CIVL", "name": "Civil Engineering" }, { "code": "ECSE", "name": "Electrical, Computer, and Systems Engineering" }, { "code": "ENGR", "name": "General Engineering" }, { "code": "ENVE", "name": "Environmental Engineering" }, { "code": "ESCI", "name": "Engineering Science" }, { "code": "ISYE", "name": "Industrial and Systems Engineering" }, { "code": "MANE", "name": "Mechanical, Aerospace, and Nuclear Engineering" }, { "code": "MTLE", "name": "Materials Science and Engineering" } ] },
-            { "name": "Architecture", "depts": [ { "code": "ARCH", "name": "Architecture" }, { "code": "LGHT", "name": "Lighting" } ] },
-            { "name": "Information Technology and Web Science", "depts": [ { "code": "ITWS", "name": "Information Technology and Web Science" } ] },
-            { "name": "Science", "depts": [ { "code": "ASTR", "name": "Astronomy" }, { "code": "BCBP", "name": "Biochemistry and Biophysics" }, { "code": "BIOL", "name": "Biology" }, { "code": "CHEM", "name": "Chemistry" }, { "code": "CSCI", "name": "Computer Science" }, { "code": "ERTH", "name": "Earth and Environmental Science" }, { "code": "ISCI", "name": "Interdisciplinary Science" }, { "code": "MATH", "name": "Mathematics" }, { "code": "MATP", "name": "Mathematical Programming, Probability, and Statistics" }, { "code": "PHYS", "name": "Physics" } ] },
-            { "name": "Management", "depts": [ { "code": "BUSN", "name": "Business (H)" }, { "code": "MGMT", "name": "Management" } ] },
-            { "name": "Uncategorized", "depts": [ { "code": "ILEA", "name": "Independent Learning Exper" } ] }
+
+        // School and Department data
+        const schools = [
+            {
+                "name": "Humanities, Arts, and Social Sciences",
+                "depts": ["ARTS", "COGS", "COMM", "ECON", "GSAS", "IHSS", "INQR", "LANG", "LITR", "PHIL", "PSYC", "STSO", "WRIT"]
+            },
+            {
+                "name": "Interdisciplinary and Other",
+                "depts": ["ADMN", "USAF", "USAR", "USNA"]
+            },
+            {
+                "name": "Engineering",
+                "depts": ["BMED", "CHME", "CIVL", "ECSE", "ENGR", "ENVE", "ESCI", "ISYE", "MANE", "MTLE"]
+            },
+            {
+                "name": "Architecture",
+                "depts": ["ARCH", "LGHT"]
+            },
+            {
+                "name": "Information Technology and Web Science",
+                "depts": ["ITWS"]
+            },
+            {
+                "name": "Science",
+                "depts": ["ASTR", "BCBP", "BIOL", "CHEM", "CSCI", "ERTH", "ISCI", "MATH", "MATP", "PHYS"]
+            },
+            {
+                "name": "Management",
+                "depts": ["BUSN", "MGMT"]
+            },
+            {
+                "name": "Uncategorized",
+                "depts": ["ILEA"]
+            }
         ];
 
-        // Create a lookup map for subject -> school name
-        const subjectSchoolMap = new Map();
-        schoolData.forEach(school => {
+        // Create a mapping from subject code to school name for quick lookup
+        const subjectToSchoolMap = new Map();
+        schools.forEach(school => {
             school.depts.forEach(dept => {
-                subjectSchoolMap.set(dept.code, school.name);
+                subjectToSchoolMap.set(dept, school.name);
             });
         });
 
-        // Grade to GPA conversion map
-        const gradeMap = {
-            'A': 4.0, 'A-': 3.67, 'B+': 3.33, 'B': 3.0, 'B-': 2.67,
-            'C+': 2.33, 'C': 2.0, 'C-': 1.67, 'D+': 1.33, 'D': 1.0, 'F': 0.0
-        };
-        // GPA to Grade conversion (for finding the *closest* letter grade)
-        const gpaMap = [
-            { gpa: 4.0, grade: 'A' }, { gpa: 3.67, grade: 'A-' }, { gpa: 3.33, grade: 'B+' },
-            { gpa: 3.0, grade: 'B' }, { gpa: 2.67, grade: 'B-' }, { gpa: 2.33, grade: 'C+' },
-            { gpa: 2.0, grade: 'C' }, { gpa: 1.67, grade: 'C-' }, { gpa: 1.33, grade: 'D+' },
-            { gpa: 1.0, grade: 'D' }, { gpa: 0.0, grade: 'F' }
-        ];
 
         // --- CORE LOGIC ---
-        
-        /**
-         * Converts a letter grade (e.g., "A-") to its GPA value.
-         * @param {string} grade - The letter grade.
-         * @returns {number | null} The GPA value or null if invalid.
-         */
-        function convertGradeToGpa(grade) {
-            if (!grade) return null;
-            return gradeMap[grade.toUpperCase().trim()] ?? null;
-        }
-
-        /**
-         * Converts a GPA value back to the *closest* letter grade.
-         * @param {number} gpa - The average GPA.
-         * @returns {string} The closest letter grade (e.GET. "B+").
-         */
-        function convertGpaToGrade(gpa) {
-            if (gpa === null || isNaN(gpa)) return 'N/A';
-            // Find the grade with the minimum difference from the calculated GPA
-            return gpaMap.reduce((prev, curr) => {
-                return (Math.abs(curr.gpa - gpa) < Math.abs(prev.gpa - gpa) ? curr : prev);
-            }).grade;
-        }
 
         /**
          * A utility function to delay execution of a function until after a pause in events.
@@ -379,13 +398,51 @@
                 }, delay);
             };
         }
+        
+        /**
+         * Converts a letter grade (e.g., "A", "B+", "C-") to a GPA value.
+         * @param {string} grade - The letter grade.
+         * @returns {number|null} The GPA value or null if invalid.
+         */
+        function gradeToGpa(grade) {
+            if (!grade) return null;
+            const gpaMap = {
+                'A+': 4.0, 'A': 4.0, 'A-': 3.67,
+                'B+': 3.33, 'B': 3.0, 'B-': 2.67,
+                'C+': 2.33, 'C': 2.0, 'C-': 1.67,
+                'D+': 1.33, 'D': 1.0, 'F': 0.0
+            };
+            return gpaMap[grade.toUpperCase()] ?? null;
+        }
+
+        /**
+         * Converts a GPA value back to the closest letter grade.
+         * @param {number} gpa - The GPA value.
+         * @returns {string} The closest letter grade.
+         */
+        function gpaToGrade(gpa) {
+            if (gpa === null || isNaN(gpa)) return 'N/A';
+            if (gpa >= 4.0) return 'A';
+            if (gpa >= 3.835) return 'A-'; // Midpoint between A (4.0) and A- (3.67)
+            if (gpa >= 3.5) return 'A-';   // Midpoint between A- (3.67) and B+ (3.33)
+            if (gpa >= 3.165) return 'B+';  // Midpoint between B+ (3.33) and B (3.0)
+            if (gpa >= 2.835) return 'B';
+            if (gpa >= 2.5) return 'B-';
+            if (gpa >= 2.165) return 'C+';
+            if (gpa >= 1.835) return 'C';
+            if (gpa >= 1.5) return 'C-';
+            if (gpa >= 1.165) return 'D+';
+            if (gpa >= 0.5) return 'D';
+            return 'F';
+        }
+
 
         /**
          * Calculates and updates the average scores for all courses based on reviews.
          * @param {Array} allReviews - An array of all review documents from Firestore.
          */
         function calculateAllAverages(allReviews) {
-            // 1. Reset all course review data
+            // 1. Create a map for quick lookup and reset all course review data
             const reviewMap = new Map();
             courses.forEach(course => {
                 course.reviews = [];
@@ -393,7 +450,7 @@
                 course.avgUsefulness = 0.0;
                 course.avgWorkload = 0.0;
                 course.avgAttendance = 0;
-                course.avgGpa = null; // Use null for no data
+                course.avgGpa = null;
                 course.reviewCount = 0;
                 reviewMap.set(course.id, course);
             });
@@ -402,8 +459,6 @@
             allReviews.forEach(review => {
                 const course = reviewMap.get(review.courseId);
                 if (course) {
-                    // Also convert the grade to GPA *before* storing
-                    review.gpa = convertGradeToGpa(review.grade);
                     course.reviews.push(review);
                 }
             });
@@ -420,11 +475,12 @@
                         acc.workload += review.workload;
                         acc.attendance += (review.attendance === 'yes' ? 1 : 0);
                         
-                        // Handle GPA calculation separately
-                        if (review.gpa !== null && !isNaN(review.gpa)) {
-                            gpaSum += review.gpa;
+                        const gpa = gradeToGpa(review.grade);
+                        if (gpa !== null) {
+                            gpaSum += gpa;
                             gpaCount++;
                         }
+                        
                         return acc;
                     }, { easiness: 0, usefulness: 0, workload: 0, attendance: 0 });
 
@@ -434,11 +490,7 @@
                     course.avgUsefulness = total.usefulness / n;
                     course.avgWorkload = total.workload / n;
                     course.avgAttendance = (total.attendance / n) * 100;
-                    
-                    // Set average GPA if we have data
-                    if (gpaCount > 0) {
-                        course.avgGpa = gpaSum / gpaCount;
-                    }
+                    course.avgGpa = (gpaCount > 0) ? (gpaSum / gpaCount) : null;
                 }
             });
         }
@@ -452,28 +504,25 @@
 
             // Get filter values
             const filterText = document.getElementById('search-bar').value.toLowerCase();
-            const schoolFilter = document.getElementById('all-courses-school-filter').value;
-            const reviewedOnly = document.getElementById('all-courses-reviewed-filter').checked;
-            
+            const selectedSchool = document.getElementById('all-courses-school').value;
+            const showReviewedOnly = document.getElementById('show-reviewed-only').checked;
+
             const filteredCourses = courses.filter(course => {
-                // Text search filter
-                const textMatch = (
-                    course.name.toLowerCase().includes(filterText) ||
-                    course.id.toLowerCase().includes(filterText) ||
-                    course.subj.toLowerCase().includes(filterText)
-                );
-                if (!textMatch) return false;
-                
                 // School filter
-                if (schoolFilter !== 'ALL' && course.school !== schoolFilter) {
+                if (selectedSchool !== 'All' && course.school !== selectedSchool) {
                     return false;
                 }
-                
                 // Reviewed only filter
-                if (reviewedOnly && course.reviewCount === 0) {
+                if (showReviewedOnly && course.reviewCount === 0) {
                     return false;
                 }
-                
+                // Text search filter
+                if (filterText.length > 0 && 
+                    !course.name.toLowerCase().includes(filterText) &&
+                    !course.id.toLowerCase().includes(filterText) &&
+                    !course.subj.toLowerCase().includes(filterText)) {
+                    return false;
+                }
                 return true;
             });
 
@@ -483,11 +532,8 @@
                 return a.crse.localeCompare(b.crse);
             });
 
-            if (filteredCourses.length === 0 && (filterText.length > 0 || schoolFilter !== 'ALL' || reviewedOnly)) {
-                listElement.innerHTML = `<p class="text-gray-400 text-center">No courses found matching your filters.</p>`;
-                return;
-            } else if (filteredCourses.length === 0 && courses.length > 0) {
-                listElement.innerHTML = `<p class="text-gray-400 text-center">No courses found.</p>`;
+            if (filteredCourses.length === 0 && courses.length > 0) {
+                listElement.innerHTML = `<p class="text-gray-400 text-center">No courses found matching your criteria.</p>`;
                 return;
             }
 
@@ -501,25 +547,22 @@
                 return;
             }
 
-            listElement.innerHTML = filteredCourses.map(course => {
-                const schoolColor = course.isHass ? 'bg-purple-600' : 'bg-gray-600';
-                const schoolName = course.isHass ? 'HASS' : course.school.split(' ')[0]; // Short name for non-HASS
-                
-                return `
+            listElement.innerHTML = filteredCourses.map(course => `
                 <div class="flex justify-between items-center bg-gray-700/50 p-4 rounded-lg">
                     <div class="flex-grow pr-4 min-w-0">
                         <span class="font-semibold text-white block truncate">${course.name}</span>
                         <span class="text-sm text-gray-400">${course.id}</span>
                         <!-- Tags -->
-                        <span class="${schoolColor} text-white text-xs px-2 py-0.5 rounded-full ml-1">
-                            ${schoolName}
-                        </span>
+                        ${course.school === 'Humanities, Arts, and Social Sciences' ? `
+                        <span class="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full ml-1">
+                            HASS
+                        </span>` : ''}
                         <!-- Average Scores -->
                         <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-300">
                             <span>Easiness: <strong class="text-green-400">${course.avgEasiness.toFixed(1)}</strong></span>
                             <span>Usefulness: <strong class="text-blue-400">${course.avgUsefulness.toFixed(1)}</strong></span>
                             <span>Workload: <strong class="text-yellow-400">${course.avgWorkload.toFixed(1)}</strong></span>
-                            <span>Grade: <strong class="text-purple-400">${convertGpaToGrade(course.avgGpa)}</strong></span>
+                            <span>Grade: <strong class="text-cyan-400">${gpaToGrade(course.avgGpa)}</strong></span>
                             <span>(${course.reviewCount} reviews)</span>
                         </div>
                     </div>
@@ -532,22 +575,21 @@
                         </button>
                     </div>
                 </div>
-            `}).join('');
+            `).join('');
         }
 
         /**
-         * Renders the top 10 courses on the leaderboard based on a sort key.
+         * Renders the top 10 courses on the leaderboard based on filters.
          */
         function renderLeaderboard() {
             const listElement = document.getElementById('leaderboard-list');
             if (!listElement) return;
 
-            // Get current filter values
             const sortBy = document.getElementById('leaderboard-sort').value;
-            const schoolFilter = document.getElementById('leaderboard-school-filter').value;
+            const selectedSchool = document.getElementById('leaderboard-school').value;
 
             if (courses.length === 0) {
-                listElement.innerHTML = `
+                 listElement.innerHTML = `
                     <div class="flex flex-col items-center justify-center p-8">
                         <div class="spinner"></div>
                         <p class="text-gray-400 text-center mt-4">Loading ratings...</p>
@@ -557,30 +599,29 @@
 
             const sortedCourses = [...courses]
                 .filter(c => c.reviewCount > 0) // Only show courses with reviews
-                .filter(c => { // Apply School filter
-                    if (schoolFilter === 'ALL') return true;
-                    return c.school === schoolFilter;
+                .filter(c => {
+                    // School filter
+                    if (selectedSchool === 'All') return true;
+                    return c.school === selectedSchool;
                 })
-                .sort((a, b) => { // Apply sorting
+                .sort((a, b) => {
                     switch (sortBy) {
                         case 'easiness':
+                            // Higher score is better
                             return b.avgEasiness - a.avgEasiness;
                         case 'workload':
+                            // Lower score is better
                             return a.avgWorkload - b.avgWorkload; 
-                        case 'grade':
-                            // Filter out nulls for grade sorting
-                            const aGpa = a.avgGpa ?? -1;
-                            const bGpa = b.avgGpa ?? -1;
-                            return bGpa - aGpa;
                         case 'usefulness':
                         default:
+                            // Higher score is better
                             return b.avgUsefulness - a.avgUsefulness;
                     }
                 })
-                .slice(0, 10); // Get top 10
+                .slice(0, 10);
 
             if (sortedCourses.length === 0) {
-                listElement.innerHTML = `<p class="text-gray-400 text-center">No reviews found for these filters.</p>`;
+                listElement.innerHTML = `<p class="text-gray-400 text-center">No reviews found for this filter.</p>`;
                 return;
             }
 
@@ -595,10 +636,6 @@
                         score = course.avgWorkload.toFixed(1);
                         scoreColor = 'text-yellow-400';
                         break;
-                    case 'grade':
-                        score = convertGpaToGrade(course.avgGpa);
-                        scoreColor = 'text-purple-400';
-                        break;
                     case 'usefulness':
                     default:
                         score = course.avgUsefulness.toFixed(1);
@@ -606,7 +643,7 @@
                 }
 
                 return `
-                <li class="leaderboard-item flex justify-between items-center bg-gray-700/50 p-3 rounded-lg transition-all hover:bg-gray-700" data-id="${course.id}">
+                <li class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg transition-all hover:bg-gray-700 cursor-pointer leaderboard-item" data-id="${course.id}">
                     <div class="flex items-center min-w-0">
                         <span class="text-2xl font-bold text-red-400 mr-4 w-8 text-center">${index + 1}</span>
                         <div class="flex-grow min-w-0">
@@ -619,11 +656,24 @@
             `}).join('');
         }
 
+        /**
+         * Populates the school filter dropdowns.
+         */
+        function populateSchoolFilters() {
+            const leaderboardSelect = document.getElementById('leaderboard-school');
+            const allCoursesSelect = document.getElementById('all-courses-school');
+            
+            const optionsHtml = ['<option value="All">All Schools</option>', ...schools.map(s => `<option value="${s.name}">${s.name}</option>`)].join('');
+            
+            leaderboardSelect.innerHTML = optionsHtml;
+            allCoursesSelect.innerHTML = optionsHtml;
+        }
+
         // --- MODAL FUNCTIONS ---
 
         /**
-         * Populates and opens the main review modal (for adding/editing).
-         * @param {string} courseId - The ID of the course to open.
+         * Opens the main review modal and populates it with course data.
+         * @param {string} courseId - The ID of the course to show.
          */
         function openReviewModal(courseId) {
             const course = courses.find(c => c.id === courseId);
@@ -633,20 +683,25 @@
             document.getElementById('modal-course-name').textContent = course.name;
             document.getElementById('modal-course-id').textContent = course.id;
             document.getElementById('modal-course-hidden-id').value = course.id;
+            
+            // Populate official info
+            document.getElementById('modal-course-desc').textContent = course.desc || 'No description available.';
+            document.getElementById('modal-course-prereqs').textContent = course.prereqs || 'None listed.';
+            document.getElementById('modal-course-offered').textContent = course.semesters.join(', ') || 'Not specified.';
 
             // Populate averages
             document.getElementById('modal-avg-easiness').textContent = course.avgEasiness.toFixed(1);
             document.getElementById('modal-avg-usefulness').textContent = course.avgUsefulness.toFixed(1);
             document.getElementById('modal-avg-workload').textContent = course.avgWorkload.toFixed(1);
             document.getElementById('modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
-            document.getElementById('modal-avg-grade').textContent = convertGpaToGrade(course.avgGpa);
+            document.getElementById('modal-avg-grade').textContent = gpaToGrade(course.avgGpa);
 
-            // Populate comments list (pass the read/write comments list)
-            populateCommentsList(course, document.getElementById('modal-comments-list'));
+            // Populate comments list
+            const commentsList = document.getElementById('modal-comments-list');
+            renderCommentsList(commentsList, course.reviews);
 
             // Reset form
-            document.getElementById('review-form').reset();
-            document.querySelector('input[name="review-attendance"][value="no"]').checked = true;
+            resetReviewForm();
 
             // Show modal
             const modal = document.getElementById('review-modal');
@@ -655,9 +710,6 @@
             modalContent.classList.remove('scale-95');
         }
 
-        /**
-         * Closes the main review modal.
-         */
         function closeReviewModal() {
             const modal = document.getElementById('review-modal');
             const modalContent = document.getElementById('review-modal-content');
@@ -666,81 +718,80 @@
             // Wait for transition to finish before hiding
             setTimeout(() => {
                 modal.classList.add('invisible');
-
-                // Also reset the form in case we were editing
-                document.getElementById('review-form').reset();
-                document.querySelector('input[name="review-attendance"][value="no"]').checked = true;
-                document.getElementById('editing-review-id').value = '';
-                const submitBtn = document.getElementById('submit-review-btn');
-                submitBtn.textContent = 'Submit Review';
-                submitBtn.disabled = false;
+                resetReviewForm(); // Also reset the form
             }, 250);
         }
 
         /**
-         * Populates and opens the read-only details modal.
-         * @param {string} courseId - The ID of the course to open.
+         * Opens the read-only leaderboard details modal.
+         * @param {string} courseId - The ID of the course to show.
          */
-        function openDetailsModal(courseId) {
+        function openLeaderboardModal(courseId) {
             const course = courses.find(c => c.id === courseId);
             if (!course) return;
 
             // Populate modal with course data
-            document.getElementById('details-modal-course-name').textContent = course.name;
-            document.getElementById('details-modal-course-id').textContent = course.id;
+            document.getElementById('l-modal-course-name').textContent = course.name;
+            document.getElementById('l-modal-course-id').textContent = course.id;
+            
+            // Populate official info
+            document.getElementById('l-modal-course-desc').textContent = course.desc || 'No description available.';
+            document.getElementById('l-modal-course-prereqs').textContent = course.prereqs || 'None listed.';
+            document.getElementById('l-modal-course-offered').textContent = course.semesters.join(', ') || 'Not specified.';
 
             // Populate averages
-            document.getElementById('details-modal-avg-easiness').textContent = course.avgEasiness.toFixed(1);
-            document.getElementById('details-modal-avg-usefulness').textContent = course.avgUsefulness.toFixed(1);
-            document.getElementById('details-modal-avg-workload').textContent = course.avgWorkload.toFixed(1);
-            document.getElementById('details-modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
-            document.getElementById('details-modal-avg-grade').textContent = convertGpaToGrade(course.avgGpa);
+            document.getElementById('l-modal-avg-easiness').textContent = course.avgEasiness.toFixed(1);
+            document.getElementById('l-modal-avg-usefulness').textContent = course.avgUsefulness.toFixed(1);
+            document.getElementById('l-modal-avg-workload').textContent = course.avgWorkload.toFixed(1);
+            document.getElementById('l-modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
+            document.getElementById('l-modal-avg-grade').textContent = gpaToGrade(course.avgGpa);
 
-            // Populate comments list (pass the read-only comments list)
-            populateCommentsList(course, document.getElementById('details-modal-comments-list'));
+            // Populate comments list (read-only)
+            const commentsList = document.getElementById('l-modal-comments-list');
+            renderCommentsList(commentsList, course.reviews, true); // true for read-only
 
             // Show modal
-            const modal = document.getElementById('details-modal');
-            const modalContent = document.getElementById('details-modal-content');
+            const modal = document.getElementById('leaderboard-modal');
+            const modalContent = document.getElementById('leaderboard-modal-content');
             modal.classList.remove('invisible', 'opacity-0');
             modalContent.classList.remove('scale-95');
         }
 
-        /**
-         * Closes the read-only details modal.
-         */
-        function closeDetailsModal() {
-            const modal = document.getElementById('details-modal');
-            const modalContent = document.getElementById('details-modal-content');
+        function closeLeaderboardModal() {
+            const modal = document.getElementById('leaderboard-modal');
+            const modalContent = document.getElementById('leaderboard-modal-content');
             modal.classList.add('opacity-0');
             modalContent.classList.add('scale-95');
             setTimeout(() => {
                 modal.classList.add('invisible');
             }, 250);
         }
-
+        
         /**
-         * A shared function to populate any comments list (read-write or read-only).
-         * @param {object} course - The course object with its reviews.
-         * @param {HTMLElement} commentsListElement - The DOM element to fill.
+         * Renders the list of comments inside a modal.
+         * @param {HTMLElement} listElement - The DOM element to fill.
+         * @param {Array} reviews - The array of review objects.
+         * @param {boolean} [isReadOnly=false] - If true, hide edit/delete buttons.
          */
-        function populateCommentsList(course, commentsListElement) {
-            if (!course.reviews || course.reviews.length === 0) {
-                commentsListElement.innerHTML = `<p class="text-gray-400 text-sm text-center">No comments yet. Be the first to review!</p>`;
+        function renderCommentsList(listElement, reviews, isReadOnly = false) {
+            if (!reviews || reviews.length === 0) {
+                listElement.innerHTML = `<p class="text-gray-400 text-sm text-center">No comments yet. Be the first to review!</p>`;
                 return;
             }
 
-            // Sort reviews by date, newest first
-            const sortedReviews = [...course.reviews].sort((a, b) => {
-                if (a.createdAt && b.createdAt) {
-                    const dateA = a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt.seconds * 1000);
-                    const dateB = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt.seconds * 1000);
-                    return dateB - dateA;
+            // Sort reviews by date, newest first (if createdAt exists)
+            const sortedReviews = [...reviews].sort((a, b) => {
+                const dateA = a.updatedAt || a.createdAt;
+                const dateB = b.updatedAt || b.createdAt;
+                if (dateA && dateB) {
+                    const timeA = dateA.toDate ? dateA.toDate().getTime() : new Date(dateA.seconds * 1000).getTime();
+                    const timeB = dateB.toDate ? dateB.toDate().getTime() : new Date(dateB.seconds * 1000).getTime();
+                    return timeB - timeA;
                 }
                 return 0;
             });
 
-            commentsListElement.innerHTML = sortedReviews.map(review => {
+            listElement.innerHTML = sortedReviews.map(review => {
                 // Format the date
                 let reviewDate = '';
                 let isEdited = false;
@@ -756,19 +807,19 @@
                     reviewDate = date.toLocaleDateString();
                 }
 
-                // Check if this is the read-write modal by seeing if edit/delete buttons should be shown
-                const showEditDelete = (review.userId === userId) && (commentsListElement.id === 'modal-comments-list');
+                const showButtons = !isReadOnly && review.userId === userId;
 
                 return (`
                 <div class="bg-gray-700 p-3 rounded-lg">
                     <p class="text-white text-sm mb-2">${review.comment || 'No comment provided.'}</p>
                     <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-400">
+                        <span class="text-xs text-gray-400 flex-wrap">
                             Prof: <strong class="text-gray-300">${review.professor || 'N/A'}</strong>
+                            ${review.grade ? `| Grade: <strong class="text-gray-300">${review.grade}</strong>` : ''}
                             ${reviewDate ? `| <span class="italic">${reviewDate} ${isEdited ? '(edited)' : ''}</span>` : ''}
                         </span>
-                        <!-- Show buttons only if it's the user's review AND it's the main review modal -->
-                        ${showEditDelete ? `
+                        <!-- Show buttons only if the review userId matches the current user's ID and not read-only -->
+                        ${showButtons ? `
                             <div class="flex gap-2 flex-shrink-0 ml-2">
                                 <button class="edit-review-btn text-xs font-medium text-blue-400 hover:text-blue-300 p-1" data-review-id="${review.id}" aria-label="Edit review">Edit</button>
                                 <button class="delete-review-btn text-xs font-medium text-red-400 hover:text-red-300 p-1" data-review-id="${review.id}" aria-label="Delete review">Delete</button>
@@ -780,11 +831,22 @@
                         <span class="text-blue-300">Usefulness: ${review.usefulness}</span>
                         <span class="text-yellow-300">Workload: ${review.workload}</span>
                         <span class="text-red-300">Attendance: ${review.attendance === 'yes' ? 'Yes' : 'No'}</span>
-                        <span class="text-purple-300">Grade: ${review.grade || 'N/A'}</span>
                     </div>
                 </div>
                 `);
             }).join('');
+        }
+        
+        /**
+         * Resets the review form to its default state.
+         */
+        function resetReviewForm() {
+            document.getElementById('review-form').reset();
+            document.querySelector('input[name="review-attendance"][value="no"]').checked = true;
+            document.getElementById('editing-review-id').value = '';
+            const submitBtn = document.getElementById('submit-review-btn');
+            submitBtn.textContent = 'Submit Review';
+            submitBtn.disabled = false;
         }
 
         async function handleSubmitReview(event) {
@@ -795,19 +857,6 @@
             const editingReviewId = document.getElementById('editing-review-id').value;
             submitBtn.textContent = editingReviewId ? 'Updating...' : 'Submitting...';
             
-            const gradeInput = document.getElementById('review-grade').value.trim().toUpperCase();
-            
-            // Validate grade input
-            if (gradeInput && !(gradeInput in gradeMap)) {
-                console.error("Invalid grade. Please enter A, A-, B+, etc.");
-                // We'd show a real error message here, but for now, we'll log and stop
-                submitBtn.disabled = false;
-                submitBtn.textContent = editingReviewId ? 'Update Review' : 'Submit Review';
-                // This is a good place for a small, non-alert error message
-                document.getElementById('review-grade').focus();
-                return;
-            }
-
             // Get data from form
             const reviewData = {
                 courseId: document.getElementById('modal-course-hidden-id').value,
@@ -816,8 +865,8 @@
                 workload: parseInt(document.getElementById('review-workload').value),
                 attendance: document.querySelector('input[name="review-attendance"]:checked').value,
                 professor: document.getElementById('review-professor').value || '',
+                grade: document.getElementById('review-grade').value.toUpperCase() || '',
                 comment: document.getElementById('review-comment').value,
-                grade: gradeInput || '', // Save the valid grade or an empty string
                 userId: userId // Always include userId
             };
 
@@ -825,12 +874,10 @@
                 if (editingReviewId) {
                     // This is an UPDATE
                     const reviewRef = doc(db, "reviews", editingReviewId);
-                    // Add an 'updatedAt' timestamp
                     reviewData.updatedAt = new Date();
                     await updateDoc(reviewRef, reviewData);
                 } else {
                     // This is a NEW review
-                    // Add a 'createdAt' timestamp
                     reviewData.createdAt = new Date();
                     await addDoc(reviewsCollection, reviewData);
                 }
@@ -839,8 +886,7 @@
                 closeReviewModal(); // This will also reset the form
             } catch (error) {
                 console.error("Error saving document: ", error);
-                // We don't have a specific message box, so alert is the fallback.
-                // In a real app, we'd use a custom modal for errors.
+                // We don't use alert()
                 console.error("Could not save your review. Please try again.");
                 submitBtn.disabled = false;
                 submitBtn.textContent = editingReviewId ? 'Update Review' : 'Submit Review';
@@ -848,37 +894,27 @@
         }
 
         // --- EVENT HANDLERS ---
-        
-        /**
-         * Handles all filter changes for the "All Courses" list
-         */
-        function handleAllCoursesFilterChange() {
-             renderAllCourses();
+        function handleFilterChange() {
+            renderAllCourses();
         }
 
-        /**
-         * Handles all filter changes for the "Leaderboard" list
-         */
         function handleLeaderboardFilterChange() {
             renderLeaderboard();
         }
 
         function handleListClick(event) {
-            // For the "All Courses" list
             const reviewButton = event.target.closest('.review-btn');
             if (reviewButton) {
                 const id = reviewButton.dataset.id;
                 openReviewModal(id);
-                return;
             }
         }
-
+        
         function handleLeaderboardClick(event) {
-            // For the "Leaderboard" list
             const item = event.target.closest('.leaderboard-item');
             if (item) {
                 const id = item.dataset.id;
-                openDetailsModal(id);
+                openLeaderboardModal(id);
             }
         }
 
@@ -886,7 +922,7 @@
          * Sets up the real-time listener for reviews from Firestore.
          */
         function setupReviewListener() {
-            // We use a simple path "reviews"
+            // Path to the reviews collection
             reviewsCollection = collection(db, "reviews");
             const q = query(reviewsCollection);
 
@@ -901,43 +937,27 @@
                 // Recalculate all averages with the fresh data
                 calculateAllAverages(allReviews);
 
-                // Re-render both lists (using the new leaderboard render function)
-                renderLeaderboard(); 
+                // Re-render both lists
+                renderLeaderboard();
                 renderAllCourses();
-
-                // This is a good place to update any open modal,
-                // so the user sees new comments appear in real-time.
-                const reviewModalOpen = !document.getElementById('review-modal').classList.contains('invisible');
-                const detailsModalOpen = !document.getElementById('details-modal').classList.contains('invisible');
-
-                if (reviewModalOpen) {
+                
+                // If a modal is open, refresh its comments
+                const reviewModal = document.getElementById('review-modal');
+                if (!reviewModal.classList.contains('invisible')) {
                     const courseId = document.getElementById('modal-course-hidden-id').value;
-                    if (courseId) {
-                        const course = courses.find(c => c.id === courseId);
-                        // Re-populate modal content without fully closing/re-opening
-                        if (course) {
-                            document.getElementById('modal-avg-easiness').textContent = course.avgEasiness.toFixed(1);
-                            document.getElementById('modal-avg-usefulness').textContent = course.avgUsefulness.toFixed(1);
-                            document.getElementById('modal-avg-workload').textContent = course.avgWorkload.toFixed(1);
-                            document.getElementById('modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
-                            document.getElementById('modal-avg-grade').textContent = convertGpaToGrade(course.avgGpa);
-                            populateCommentsList(course, document.getElementById('modal-comments-list'));
-                        }
+                    const course = courses.find(c => c.id === courseId);
+                    if(course) {
+                         const commentsList = document.getElementById('modal-comments-list');
+                         renderCommentsList(commentsList, course.reviews);
                     }
                 }
-                if (detailsModalOpen) {
-                    const courseId = document.getElementById('details-modal-course-id').textContent;
-                    if (courseId) {
-                        const course = courses.find(c => c.id === courseId);
-                         // Re-populate modal content without fully closing/re-opening
-                        if (course) {
-                            document.getElementById('details-modal-avg-easiness').textContent = course.avgEasiness.toFixed(1);
-                            document.getElementById('details-modal-avg-usefulness').textContent = course.avgUsefulness.toFixed(1);
-                            document.getElementById('details-modal-avg-workload').textContent = course.avgWorkload.toFixed(1);
-                            document.getElementById('details-modal-avg-attendance').textContent = `${course.avgAttendance.toFixed(0)}%`;
-                            document.getElementById('details-modal-avg-grade').textContent = convertGpaToGrade(course.avgGpa);
-                            populateCommentsList(course, document.getElementById('details-modal-comments-list'));
-                        }
+                const leaderboardModal = document.getElementById('leaderboard-modal');
+                if (!leaderboardModal.classList.contains('invisible')) {
+                    const courseId = document.getElementById('l-modal-course-id').textContent;
+                    const course = courses.find(c => c.id === courseId);
+                    if(course) {
+                         const commentsList = document.getElementById('l-modal-comments-list');
+                         renderCommentsList(commentsList, course.reviews, true);
                     }
                 }
 
@@ -951,146 +971,9 @@
                 `;
             });
         }
-        
-        /**
-         * Populates the school filter dropdowns
-         */
-        function populateSchoolFilters() {
-            const leaderboardFilter = document.getElementById('leaderboard-school-filter');
-            const allCoursesFilter = document.getElementById('all-courses-school-filter');
-            
-            const optionsHtml = schoolData.map(school => 
-                `<option value="${school.name}">${school.name}</option>`
-            ).join('');
-            
-            const allSchoolsOption = '<option value="ALL">All Schools</option>';
-            
-            leaderboardFilter.innerHTML = allSchoolsOption + optionsHtml;
-            allCoursesFilter.innerHTML = allSchoolsOption + optionsHtml;
-        }
-
-        /**
-         * Initializes the application.
-         * @param {object} firebaseConfig - The Firebase config object.
-         */
-        async function init(firebaseConfig) {
-            // 1. Populate filters that don't depend on data
-            populateSchoolFilters();
-            
-            // 2. Get DOM elements
-            const searchBar = document.getElementById('search-bar');
-            const allCoursesList = document.getElementById('all-courses-list');
-            const allCoursesSchoolFilter = document.getElementById('all-courses-school-filter');
-            const allCoursesReviewedFilter = document.getElementById('all-courses-reviewed-filter');
-            
-            const leaderboardList = document.getElementById('leaderboard-list');
-            const leaderboardSort = document.getElementById('leaderboard-sort');
-            const leaderboardSchoolFilter = document.getElementById('leaderboard-school-filter');
-            
-            // Review Modal Elements
-            const modalCloseBtn = document.getElementById('modal-close-btn');
-            const modal = document.getElementById('review-modal');
-            const modalContent = document.getElementById('review-modal-content');
-            const reviewForm = document.getElementById('review-form');
-
-            // Details Modal Elements
-            const detailsModalCloseBtn = document.getElementById('details-modal-close-btn');
-            const detailsModal = document.getElementById('details-modal');
-
-            // 3. Set up event listeners
-            // All Courses filters
-            searchBar.addEventListener('input', debounce(handleAllCoursesFilterChange, 300));
-            allCoursesSchoolFilter.addEventListener('change', handleAllCoursesFilterChange);
-            allCoursesReviewedFilter.addEventListener('change', handleAllCoursesFilterChange);
-
-            // Leaderboard filters
-            leaderboardSort.addEventListener('change', handleLeaderboardFilterChange);
-            leaderboardSchoolFilter.addEventListener('change', handleLeaderboardFilterChange);
-
-            // Click listeners for lists
-            allCoursesList.addEventListener('click', handleListClick);
-            leaderboardList.addEventListener('click', handleLeaderboardClick);
-
-            // Review Modal Listeners
-            modalCloseBtn.addEventListener('click', closeReviewModal);
-            modal.addEventListener('click', (e) => {
-                if (e.target.id === 'review-modal') closeReviewModal();
-            });
-            modalContent.addEventListener('click', handleModalClicks); // For edit/delete
-            reviewForm.addEventListener('submit', handleSubmitReview);
-            
-            // Details Modal Listeners
-            detailsModalCloseBtn.addEventListener('click', closeDetailsModal);
-            detailsModal.addEventListener('click', (e) => {
-                if (e.target.id === 'details-modal') closeDetailsModal();
-            });
-            
-            // 4. Set initial loading state
-            renderAllCourses(); // Will show loading spinner
-            renderLeaderboard(); // Will show loading spinner
-
-            try {
-                // 5. Initialize Firebase
-                if (!firebaseConfig || !firebaseConfig.apiKey) {
-                    throw new Error("Firebase config is missing or incomplete.");
-                }
-
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                setLogLevel('debug'); // For more detailed logs in the console
-
-                // 6. Sign in the user anonymously
-                const userCredential = await signInAnonymously(auth);
-                userId = userCredential.user.uid;
-                console.log("Signed in anonymously as:", userId);
-
-                // 7. Fetch the course catalog
-                const response = await fetch('catalog.json');
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const courseData = await response.json();
-
-                // 8. Process catalog.json into the global 'courses' array
-                for (const id in courseData) {
-                    const course = courseData[id];
-                    if (course.subj && course.crse && course.name) {
-                        const schoolName = subjectSchoolMap.get(course.subj) || 'Uncategorized';
-                        const isHass = schoolName === 'Humanities, Arts, and Social Sciences';
-                        courses.push({
-                            id: id,
-                            name: course.name,
-                            subj: course.subj,
-                            crse: course.crse,
-                            // difficulty: getDifficulty(course.crse, course.name, isHass), // Removed this line
-                            school: schoolName,
-                            isHass: isHass,
-                            reviews: [] // Initialize empty reviews array
-                        });
-                    }
-                }
-
-                // 9. Set up the real-time review listener
-                // This will also trigger the first data load and re-render
-                setupReviewListener();
-
-            } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                const errorMsg = `
-                    <div class="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg">
-                        <h3 class="font-bold">Database Error</h3>
-                        <p>Could not connect to the reviews database.</p>
-                        <p class="text-sm mt-2 text-red-300"><strong>Details:</strong> ${error.message}</p>
-                        <p class="text-sm mt-2">If you're running this locally, make sure you've pasted your firebaseConfig into the &lt;script&gt; tag in index.html.</p>
-                    </div>
-                `;
-                document.getElementById('all-courses-list').innerHTML = errorMsg;
-                document.getElementById('leaderboard-list').innerHTML = `<p class="text-red-300 text-center p-4">Database connection failed.</p>`;
-            }
-        }
 
         /**
          * Handles clicks inside the modal, specifically for Edit and Delete buttons.
-         * Uses event bubbling.
          */
         async function handleModalClicks(event) {
             const target = event.target;
@@ -1109,8 +992,6 @@
                         // onSnapshot will handle the UI update
                     } catch (error) {
                         console.error("Error deleting review: ", error);
-                        // alert("Could not delete the review. Please try again.");
-                        console.error("Could not delete the review. Please try again.");
                         target.textContent = 'Delete';
                         target.disabled = false;
                     }
@@ -1140,8 +1021,7 @@
                 document.getElementById('review-easiness').value = review.easiness;
                 document.getElementById('review-usefulness').value = review.usefulness;
                 document.getElementById('review-workload').value = review.workload;
-                // Handle radio button
-                const attendanceValue = review.attendance || 'no'; // Default to 'no' if not set
+                const attendanceValue = review.attendance || 'no';
                 document.querySelector(`input[name="review-attendance"][value="${attendanceValue}"]`).checked = true;
                 document.getElementById('review-professor').value = review.professor || '';
                 document.getElementById('review-grade').value = review.grade || '';
@@ -1158,6 +1038,163 @@
             }
         }
 
+        /**
+         * Fetches and processes all course catalog data.
+         */
+        async function loadCourseData() {
+            const [springRes, fallRes, prereqRes] = await Promise.all([
+                fetch('resources/spring_catalog.json'),
+                fetch('resources/fall_catalog.json'),
+                fetch('resources/prereq_graph.json')
+            ]);
+            
+            if (!springRes.ok || !fallRes.ok || !prereqRes.ok) {
+                throw new Error('Failed to fetch one or more catalog files.');
+            }
+            
+            const springData = await springRes.json();
+            const fallData = await fallRes.json();
+            prereqGraph = await prereqRes.json();
+            
+            const courseMap = new Map();
+
+            // Process spring data
+            for (const id in springData) {
+                const course = springData[id];
+                if (course.subj && course.crse && course.name) {
+                    courseMap.set(id, {
+                        id: id,
+                        name: course.name,
+                        subj: course.subj,
+                        crse: course.crse,
+                        desc: course.desc || null,
+                        semesters: ['Spring'],
+                        school: subjectToSchoolMap.get(course.subj) || 'Uncategorized',
+                        prereqs: prereqGraph[id]?.prereqs.join(', ') || null,
+                        reviews: []
+                    });
+                }
+            }
+            
+            // Process fall data and merge
+            for (const id in fallData) {
+                const course = fallData[id];
+                if (course.subj && course.crse && course.name) {
+                    if (courseMap.has(id)) {
+                        // Course exists, just add 'Fall' to semesters
+                        courseMap.get(id).semesters.push('Fall');
+                    } else {
+                        // New course, add it
+                        courseMap.set(id, {
+                            id: id,
+                            name: course.name,
+                            subj: course.subj,
+                            crse: course.crse,
+                            desc: course.desc || null,
+                            semesters: ['Fall'],
+                            school: subjectToSchoolMap.get(course.subj) || 'Uncategorized',
+                            prereqs: prereqGraph[id]?.prereqs.join(', ') || null,
+                            reviews: []
+                        });
+                    }
+                }
+            }
+            
+            // Convert map back to array
+            courses = Array.from(courseMap.values());
+        }
+
+        /**
+         * Initializes the application.
+         * @param {object} firebaseConfig - The Firebase config object.
+         */
+        async function init(firebaseConfig) {
+            // 1. Get DOM elements
+            const searchBar = document.getElementById('search-bar');
+            const showReviewedOnly = document.getElementById('show-reviewed-only');
+            const allCoursesList = document.getElementById('all-courses-list');
+            const allCoursesSchool = document.getElementById('all-courses-school');
+            
+            const leaderboardList = document.getElementById('leaderboard-list');
+            const leaderboardSort = document.getElementById('leaderboard-sort');
+            const leaderboardSchool = document.getElementById('leaderboard-school');
+
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const modal = document.getElementById('review-modal');
+            const modalContent = document.getElementById('review-modal-content'); // For event bubbling
+            const reviewForm = document.getElementById('review-form');
+            
+            const lModalCloseBtn = document.getElementById('l-modal-close-btn');
+            const lModal = document.getElementById('leaderboard-modal');
+
+            // 2. Populate filters
+            populateSchoolFilters();
+
+            // 3. Set up event listeners
+            searchBar.addEventListener('input', debounce(handleFilterChange, 300));
+            showReviewedOnly.addEventListener('change', handleFilterChange);
+            allCoursesSchool.addEventListener('change', handleFilterChange);
+            allCoursesList.addEventListener('click', handleListClick);
+            
+            leaderboardSort.addEventListener('change', handleLeaderboardFilterChange);
+            leaderboardSchool.addEventListener('change', handleLeaderboardFilterChange);
+            leaderboardList.addEventListener('click', handleLeaderboardClick);
+
+            // Modal listeners
+            modalCloseBtn.addEventListener('click', closeReviewModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'review-modal') closeReviewModal();
+            });
+            modalContent.addEventListener('click', handleModalClicks);
+            reviewForm.addEventListener('submit', handleSubmitReview);
+            
+            lModalCloseBtn.addEventListener('click', closeLeaderboardModal);
+            lModal.addEventListener('click', (e) => {
+                if (e.target.id === 'leaderboard-modal') closeLeaderboardModal();
+            });
+            
+            // 4. Set initial loading state
+            renderAllCourses(); // Will show loading spinner
+            renderLeaderboard(); // Will show loading spinner
+
+            try {
+                // 5. Initialize Firebase
+                if (!firebaseConfig || !firebaseConfig.apiKey) {
+                    throw new Error("Firebase config is missing or incomplete.");
+                }
+
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // For more detailed logs in the console
+
+                // 6. Sign in the user anonymously
+                const userCredential = await signInAnonymously(auth);
+                userId = userCredential.user.uid;
+                console.log("Signed in anonymously as:", userId);
+
+                // 7. Fetch and process the course catalogs
+                await loadCourseData();
+
+                // 8. Set up the real-time review listener
+                // This will also trigger the first data load and re-render
+                setupReviewListener();
+
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                const errorMsg = `
+                    <div class="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg">
+                        <h3 class="font-bold">Error</h3>
+                        <p>Could not load course data or connect to the database.</p>
+                        <p class="text-sm mt-2 text-red-300"><strong>Details:</strong> ${error.message}</p>
+                        <p class="text-sm mt-2">If you're running this locally, make sure your firebaseConfig is correct and all catalog files (spring_catalog.json, fall_catalog.json, prereq_graph.json) are in a 'resources' folder.</p>
+                    </div>
+                `;
+                document.getElementById('all-courses-list').innerHTML = errorMsg;
+                document.getElementById('leaderboard-list').innerHTML = `<p class="text-red-300 text-center p-4">Database connection failed.</p>`;
+            }
+        }
+
         // --- START THE APP ---
         document.addEventListener('DOMContentLoaded', () => {
             // ===================================================================
@@ -1167,11 +1204,11 @@
             // 1. Go to https://firebase.google.com/ and create a project.
             // 2. Go to Build > Authentication > Get Started > Anonymous > Enable.
             // 3. Go to Build > Firestore Database > Create database > Production Mode.
-            // 4. In Firestore, go to the "Rules" tab and change `allow read, write: if false;` to `if true;`
+            // 4. In Firestore, go to the "Rules" tab and change `allow read, write: if false;` 
+            //    to `allow read, write: if request.auth != null;` (This is more secure!)
             // 5. Go to Project Settings -> Your apps -> Web app (</>).
             // 6. Copy the 'firebaseConfig' object and paste it below.
             
-            // This config is from the user's message, cleaned for syntax.
             const firebaseConfig = {
               apiKey: "AIzaSyB8ohAmH8dlBbafWBWdKG__0PIvMVgFmCg",
               authDomain: "quacker-81eeb.firebaseapp.com",
@@ -1182,7 +1219,7 @@
               measurementId: "G-50JFZRHV33"
             };
 
-            // =================================G-50JFZRHV33==================================
+            // ===================================================================
             // === (No need to edit below this line) ===
             // ===================================================================
 
