@@ -83,6 +83,13 @@
                             <option value="">Filter All</option>
                             <!-- Options populated by JavaScript -->
                         </select>
+                        <!-- NEW LEADERBOARD SEARCH -->
+                        <input 
+                            type="text" 
+                            id="leaderboard-search" 
+                            placeholder="Search by code (CSCI, MATH, etc.)" 
+                            class="p-1 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 w-full"
+                        >
                     </div>
                 </div>
                 <ol id="leaderboard-list" class="space-y-3">
@@ -413,7 +420,8 @@
             { "name": "Interdisciplinary and Other", "depts": [ { "code": "ADMN", "name": "Administrative Courses" }, { "code": "USAF", "name": "Aerospace Studies (Air Force ROTC)" }, { "code": "USAR", "name": "Military Science (Army ROTC)" }, { "code": "USNA", "name": "Naval Science (Navy ROTC)" } ] },
             { "name": "Engineering", "depts": [ { "code": "BMED", "name": "Biomedical Engineering" }, { "code": "CHME", "name": "Chemical Engineering" }, { "code": "CIVL", "name": "Civil Engineering" }, { "code": "ECSE", "name": "Electrical, Computer, and Systems Engineering" }, { "code": "ENGR", "name": "General Engineering" }, { "code": "ENVE", "name": "Environmental Engineering" }, { "code": "ESCI", "name": "Engineering Science" }, { "code": "ISYE", "name": "Industrial and Systems Engineering" }, { "code": "MANE", "name": "Mechanical, Aerospace, and Nuclear Engineering" }, { "code": "MTLE", "name": "Materials Science and Engineering" } ] },
             { "name": "Architecture", "depts": [ { "code": "ARCH", "name": "Architecture" }, { "code": "LGHT", "name": "Lighting" } ] },
-            { "name": "Information Technology and Web Science", "depts": [ { "code": "ITWS", "name": "Information Technology and Web Science" } ] },
+            // --- FIX: Shortened "Information Technology and Web Science" to "ITWS" ---
+            { "name": "ITWS", "depts": [ { "code": "ITWS", "name": "Information Technology and Web Science" } ] },
             { "name": "Science", "depts": [ { "code": "ASTR", "name": "Astronomy" }, { "code": "BCBP", "name": "Biochemistry and Biophysics" }, { "code": "BIOL", "name": "Biology" }, { "code": "CHEM", "name": "Chemistry" }, { "code": "CSCI", "name": "Computer Science" }, { "code": "ERTH", "name": "Earth and Environmental Science" }, { "code": "ISCI", "name": "Interdisciplinary Science" }, { "code": "MATH", "name": "Mathematics" }, { "code": "MATP", "name": "Mathematical Programming, Probability, and Statistics" }, { "code": "PHYS", "name": "Physics" } ] },
             { "name": "Management", "depts": [ { "code": "BUSN", "name": "Business (H)" }, { "code": "MGMT", "name": "Management" } ] },
             { "name": "Uncategorized", "depts": [ { "code": "ILEA", "name": "Independent Learning Exper" } ] }
@@ -759,6 +767,8 @@
             if (!listElement) return;
 
             const filterValue = document.getElementById('leaderboard-filter').value;
+            const searchInput = document.getElementById('leaderboard-search').value.toLowerCase().trim();
+            
             let filterType = '';
             let filterTerm = '';
 
@@ -773,15 +783,23 @@
             const filteredCourses = allCourses
                 .filter(c => c.reviewCount > 0) // Only show courses with reviews
                 .filter(course => {
-                    if (!filterValue) return true; // Show all if no filter selected
-
-                    if (filterType === 'TAG') {
-                        // Check if the course's tags array includes the specified core tag (HASS, SCIENCE, MATH)
-                        return course.tags.includes(filterTerm);
-                    } else if (filterType === 'SCHOOL') {
-                        // Check if the course belongs to the specified school
-                        return course.school === filterTerm;
+                    // 1. Dropdown Filter (TAG or SCHOOL)
+                    if (filterValue) {
+                        if (filterType === 'TAG') {
+                            if (!course.tags.includes(filterTerm)) return false;
+                        } else if (filterType === 'SCHOOL') {
+                            if (course.school !== filterTerm) return false;
+                        }
                     }
+                    
+                    // 2. Search Input Filter (NEW)
+                    if (searchInput) {
+                        // Check if the course ID (e.g., CSCI-1200) or subject (e.g., CSCI) includes the search input
+                        const courseCodeMatch = course.id.toLowerCase().includes(searchInput) ||
+                                                course.subj.toLowerCase().includes(searchInput);
+                        if (!courseCodeMatch) return false;
+                    }
+                    
                     return true;
                 })
                 .sort((a, b) => {
@@ -1332,6 +1350,9 @@
             
             // NEW Leaderboard filter listener
             document.getElementById('leaderboard-filter').addEventListener('change', (e) => renderLeaderboard(document.getElementById('leaderboard-sort').value));
+            
+            // NEW Leaderboard search listener
+            document.getElementById('leaderboard-search').addEventListener('input', (e) => renderLeaderboard(document.getElementById('leaderboard-sort').value));
 
 
             // Clicks on the main course list
