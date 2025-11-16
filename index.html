@@ -106,43 +106,45 @@
 
             <!-- Right Column: All Courses & Search -->
             <div class="lg:col-span-2 bg-gray-800 p-6 rounded-xl shadow-2xl">
-                <h2 class="text-2xl font-semibold mb-4 border-b border-gray-700 pb-2 text-white">
-                    All Courses
-                </h2>
-                <!-- Search and Filter Controls -->
-                <!-- MODIFIED LAYOUT: Replaced space-y-4 container with a single flex row -->
-                <div class="flex flex-col md:flex-row gap-4 mb-4">
-                    <!-- Column 1: Search Bar -->
-                    <input 
-                        type="text" 
-                        id="search-bar" 
-                        placeholder="Search by name, subject, or course #" 
-                        class="w-full md:w-2/5 p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                    
-                    <!-- Column 2: Filter + Checkbox -->
-                    <div class="w-full md:w-2/5 flex flex-col space-y-2 justify-center">
-                        <!-- COMBINED ALL COURSES FILTER -->
-                        <select id="all-courses-filter" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <option value="">Filter by School/Core Tag...</option>
-                            <!-- Options populated by JavaScript -->
-                        </select>
-                        
-                        <!-- "Show only reviewed courses" checkbox -->
-                        <div class="flex items-center justify-end">
-                            <input 
-                                type="checkbox" 
-                                id="show-reviewed-only" 
-                                class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-400"
+                <!-- NEW: Matched structure and style to Leaderboard column for balance -->
+                <div class="flex flex-col border-b border-gray-700 pb-2 mb-4">
+                    <h2 class="text-2xl font-semibold text-white mb-2">
+                        All Courses
+                    </h2>
+                    <!-- NEW: Reverted to simple stacked controls to match leaderboard height -->
+                    <div class="flex flex-col space-y-2">
+                        <input 
+                            type="text" 
+                            id="search-bar" 
+                            placeholder="Search by name, subject, or course #" 
+                            class="w-full p-1 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                        <!-- NEW: Wrapper for side-by-side filter controls -->
+                        <div class="flex items-center space-x-4">
+                            <!-- Checkbox (on the left) -->
+                            <div class="flex-shrink-0 flex items-center">
+                                <input 
+                                    type="checkbox" 
+                                    id="show-reviewed-only" 
+                                    class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-400"
+                                >
+                                <label for="show-reviewed-only" class="ml-2 text-sm font-medium text-gray-300">
+                                    Show only courses with reviews
+                                </label>
+                            </div>
+                            <!-- Filter (on the right, takes remaining space) -->
+                            <select 
+                                id="all-courses-filter" 
+                                class="w-full p-1 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                             >
-                            <label for="show-reviewed-only" class="ml-2 text-sm font-medium text-gray-300">
-                                Show only courses with reviews
-                            </label>
+                                <option value="">Filter by School/Core Tag...</option>
+                                <!-- Options populated by JavaScript -->
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <div id="all-courses-list" class="max-h-[65vh] overflow-y-auto space-y-3 pr-2">
+                <div id="all-courses-list" class="max-h-[60vh] overflow-y-auto space-y-3 pr-2">
                     <!-- Course list will be injected here by JavaScript -->
                     <p class="text-gray-400 text-center">Loading courses...</p>
                 </div>
@@ -423,9 +425,8 @@
         const activeSummaryGenerations = new Set(); // Track active API calls
 
         // --- !! DATA CLEANUP FLAG !! ---
-        // Set this to true to force-regenerate ALL AI summaries.
-        // This will fix old errors, truncated text, and 1-review summaries.
-        // After one complete run (check Firebase), set this back to false to save tokens.
+        // This flag was used to force-regenerate all AI summaries to fix old data.
+        // It is now set to false to use the normal, token-saving logic.
         const FORCE_REGENERATE_ALL = false;
         // --- !! END FLAG !! ---
 
@@ -1466,13 +1467,7 @@
             `}).join('');
             
             // Re-attach listeners for dynamically added buttons
-            const reviewsListElement = document.getElementById(elementId);
-            reviewsListElement.querySelectorAll('.delete-review-btn').forEach(button => {
-                button.addEventListener('click', handleDeleteReviewClick);
-            });
-            reviewsListElement.querySelectorAll('.edit-review-btn').forEach(button => {
-                 button.addEventListener('click', handleEditReviewClick);
-            });
+            // REMOVED: This is now handled by event delegation in init()
         }
 
 
@@ -1606,11 +1601,11 @@
                             authReady = true;
                             attachFirebaseListener();
                         }
-                    } else { // <-- Added this back
-                        console.log("Auth state changed: User is signed out."); // <-- Added this back
-                        authReady = false; // <-- Added this back
-                    } // <-- Added this back
-                }); // <-- FIX: Added missing });
+                    } else {
+                        console.log("Auth state changed: User is signed out.");
+                        authReady = false;
+                    }
+                }); // <-- This line was fixed
 
                 // --- FIX: Re-added missing sign-in logic ---
                 if (typeof __initial_auth_token !== 'undefined') {
@@ -1688,6 +1683,35 @@
                 // Immediately open the review modal without trying to find and scroll the element
                 openReviewModal(courseId);
             });
+
+            // --- NEW: Event Delegation for dynamic review buttons ---
+            // Handles clicks on the "Edit" and "Delete" buttons in the review list
+            const reviewsList = document.getElementById('reviews-list');
+            if (reviewsList) {
+                reviewsList.addEventListener('click', (e) => {
+                    const editButton = e.target.closest('.edit-review-btn');
+                    if (editButton) {
+                        handleEditReviewClick(e);
+                        return;
+                    }
+                    
+                    const deleteButton = e.target.closest('.delete-review-btn');
+                    if (deleteButton) {
+                        handleDeleteReviewClick(e);
+                        return;
+                    }
+                });
+            }
+            
+            // Do the same for the leaderboard review list
+            const leaderboardReviewsList = document.getElementById('leaderboard-reviews-list');
+            if (leaderboardReviewsList) {
+                leaderboardReviewsList.addEventListener('click', (e) => {
+                    // Note: Leaderboard modal doesn't have edit/delete, but
+                    // this adds the pattern in case you add them later.
+                    // For now, it just clicks through.
+                });
+            }
         }
 
         // Start the application
