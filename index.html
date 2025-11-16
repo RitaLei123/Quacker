@@ -405,6 +405,14 @@
         let currentSchoolFilter = ""; // Global state for school filtering
         const activeSummaryGenerations = new Set(); // Track active API calls
 
+        // --- !! DATA CLEANUP FLAG !! ---
+        // Set this to true to force-regenerate ALL AI summaries.
+        // This will fix old errors, truncated text, and 1-review summaries.
+        // After one complete run (check Firebase), set this back to false to save tokens.
+        const FORCE_REGENERATE_ALL = true;
+        // --- !! END FLAG !! ---
+
+
         // --- GPA CONVERSION ---
         const gpaMap = {
             "A": 4.0, "A-": 3.67, "B+": 3.33, "B": 3.0, "B-": 2.67,
@@ -562,7 +570,7 @@
                 },
                 generationConfig: {
                     temperature: 0.5,
-                    maxOutputTokens: 512, // FIX: Increased from 250 to 512
+                    maxOutputTokens: 1024, // FIX: Increased from 512 to 1024
                 }
             };
 
@@ -861,14 +869,25 @@
                     // Check if no summary exists at all and we have at least 2 reviews
                     const noSummaryExists = !cleanSummary && reviews.length >= 2;
                     
-                    // Generate if:
-                    // 1. It's old, bad data (needsRegeneration)
-                    // 2. No summary exists at all, and we have 2+ reviews
-                    // 3. A summary *does* exist, but we have 2+ *new* reviews since it was last generated
-                    const shouldGenerate = needsRegeneration || noSummaryExists || (cleanSummary && hasEnoughNewReviews);
+                    let shouldGenerate = false; // Default to false
+
+                    // This is the master override for data cleanup
+                    if (FORCE_REGENERATE_ALL && reviews.length >= 2) {
+                        shouldGenerate = true;
+                        console.log(`FORCING REGENERATION for ${course.id} (reviews: ${reviews.length})`);
+                    } else {
+                        // Generate if:
+                        // 1. It's old, bad data (needsRegeneration)
+                        // 2. No summary exists at all, and we have 2+ reviews
+                        // 3. A summary *does* exist, but we have 2+ *new* reviews since it was last generated
+                        shouldGenerate = needsRegeneration || noSummaryExists || (cleanSummary && hasEnoughNewReviews);
+                    }
+
+                    if (shouldGenerate && !FORCE_REGENERATE_ALL) { // Don't log twice
+                        console.log(`Generating AI summary for ${course.id} (Reason: Regen: ${needsRegeneration}, No Summary: ${noSummaryExists}, New Reviews: ${hasEnoughNewReviews})`);
+                    }
 
                     if (shouldGenerate) { 
-                        console.log(`Generating AI summary for ${course.id} (Reason: Regen: ${needsRegeneration}, No Summary: ${noSummaryExists}, New Reviews: ${hasEnoughNewReviews})`);
                         // Call this async but don't block the UI thread.
                         // It will save to Firebase, and onSnapshot will pick it up.
                         generateAndSaveSummary(course.id, course.name, reviews);
