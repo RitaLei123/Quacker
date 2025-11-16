@@ -88,12 +88,21 @@
                 <h2 class="text-2xl font-semibold mb-4 border-b border-gray-700 pb-2 text-white">
                     All Courses
                 </h2>
-                <input 
-                    type="text" 
-                    id="search-bar" 
-                    placeholder="Search by name, subject (e.g., CSCI), or course #" 
-                    class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg mb-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
+                <!-- Search and Filter Controls -->
+                <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                    <input 
+                        type="text" 
+                        id="search-bar" 
+                        placeholder="Search by name, subject, or course #" 
+                        class="w-full sm:w-2/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                    <!-- NEW SCHOOL FILTER -->
+                    <select id="school-filter" class="w-full sm:w-1/3 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="">Filter by School...</option>
+                        <!-- Options populated by JavaScript -->
+                    </select>
+                </div>
+
                 <div id="all-courses-list" class="max-h-[65vh] overflow-y-auto space-y-3 pr-2">
                     <!-- Course list will be injected here by JavaScript -->
                     <p class="text-gray-400 text-center">Loading courses...</p>
@@ -365,6 +374,7 @@
         let allReviews = {}; // Holds all review data from Firebase
         let auth, db, userId; // Firebase instances
         let authReady = false; // Flag to track auth state
+        let currentSchoolFilter = ""; // New global state for school filtering
 
         // --- GPA CONVERSION ---
         const gpaMap = {
@@ -409,6 +419,22 @@
             });
         });
 
+        /**
+         * Populates the School Filter dropdown with unique school names.
+         */
+        function populateSchoolFilter() {
+            const filterElement = document.getElementById('school-filter');
+            if (!filterElement) return;
+
+            const uniqueSchools = [...new Set(schoolData.map(s => s.name))].sort();
+
+            const optionsHtml = uniqueSchools.map(school => 
+                `<option value="${school}">${school}</option>`
+            ).join('');
+
+            filterElement.innerHTML = `<option value="">Filter by School...</option>` + optionsHtml;
+        }
+
         // --- CORE DATA & RENDERING LOGIC ---
 
         /**
@@ -447,21 +473,16 @@
                     const prereqData = prereqId ? prereqGraph[prereqId] : null; // Look up "CSCI 1200" in prereqGraph
                     const hasPrereqs = prereqData && prereqData.prereqs && prereqData.prereqs.length > 0;
 
-                    // --- FEATURE 2 & NEW TAG: Add Prereq and School Tags ---
-                    let tags = [];
                     // 1. Prereq Tag
+                    let tags = [];
                     if (hasPrereqs) {
                         tags.push('Has Prereqs');
                     } else {
                         tags.push('No Prereqs');
                     }
                     
-                    // 2. School Tag (NEW)
+                    // 2. School Name (Stored separately for filtering, not as a tag)
                     const schoolName = subjectSchoolMap.get(course.subj.trim().toUpperCase());
-                    if (schoolName) {
-                        tags.push(schoolName);
-                    }
-                    // --- END TAGGING ---
                     
                     return {
                         id: id,
@@ -470,7 +491,8 @@
                         crse: course.crse,
                         description: course.description || "No description available.",
                         prereqs: hasPrereqs ? prereqData.prereqs.join(', ') : 'None listed.',
-                        tags: tags,
+                        tags: tags, // Only Prereq tag now
+                        school: schoolName || 'Uncategorized', // Store school name here
                         // Initialize review data (will be populated by Firebase)
                         reviews: [],
                         reviewCount: 0,
@@ -590,9 +612,8 @@
 
             // Re-render everything with the new data
             const currentSearch = document.getElementById('search-bar').value;
-            const currentSort = document.getElementById('leaderboard-sort').value;
             renderAllCourses(currentSearch);
-            renderLeaderboard(currentSort);
+            renderLeaderboard(document.getElementById('leaderboard-sort').value);
         }
 
         /**
@@ -604,12 +625,19 @@
             if (!listElement) return;
 
             const lowerFilter = filterText.toLowerCase().trim();
+            const schoolFilterValue = document.getElementById('school-filter').value;
             
-            const filteredCourses = filterText ? allCourses.filter(course => (
-                course.name.toLowerCase().includes(lowerFilter) ||
-                course.id.toLowerCase().includes(lowerFilter) ||
-                course.subj.toLowerCase().includes(lowerFilter)
-            )) : allCourses; // Show all if no filter
+            const filteredCourses = allCourses.filter(course => {
+                // 1. Search Bar Filter
+                const searchMatch = !filterText || course.name.toLowerCase().includes(lowerFilter) ||
+                                                course.id.toLowerCase().includes(lowerFilter) ||
+                                                course.subj.toLowerCase().includes(lowerFilter);
+                
+                // 2. School Filter
+                const schoolMatch = !schoolFilterValue || course.school === schoolFilterValue;
+
+                return searchMatch && schoolMatch;
+            });
 
             filteredCourses.sort((a, b) => {
                 if (a.subj < b.subj) return -1;
@@ -618,12 +646,12 @@
             });
 
             if (filteredCourses.length === 0) {
-                listElement.innerHTML = `<p class="text-gray-400 text-center">No courses found matching "${filterText}".</p>`;
+                listElement.innerHTML = `<p class="text-gray-400 text-center">No courses found matching your criteria.</p>`;
                 return;
             }
 
             listElement.innerHTML = filteredCourses.map(course => {
-                // --- FEATURE 2: Create HTML for tags ---
+                // --- FEATURE 2: Create HTML for tags (only Prereq tag remains) ---
                 const tagsHtml = course.tags.map(tag => {
                     let color;
                     // Define colors based on tag type
@@ -632,13 +660,16 @@
                     } else if (tag.includes('Prereqs')) {
                         color = 'bg-yellow-800 text-yellow-200';
                     } else {
-                        // NEW: Color for the School/Department tag
-                        color = 'bg-blue-800 text-blue-200'; 
+                        // This case should theoretically not happen now, but keep for safety
+                        color = 'bg-gray-800 text-gray-200'; 
                     }
 
                     return `<span class="text-xs font-medium px-2 py-0.5 rounded ${color}" title="${tag}">${tag}</span>`;
                 }).join(' ');
                 
+                // School name displayed normally here
+                const schoolDisplay = course.school ? `<span class="text-xs text-blue-400">${course.school}</span>` : '';
+
                 return `
                 <div class="flex justify-between items-center bg-gray-700/50 p-4 rounded-lg transition-colors hover:bg-gray-700">
                     <div class="flex-grow pr-4 overflow-hidden">
@@ -647,8 +678,9 @@
                             <span class="text-sm text-gray-400">${course.id} (${course.reviewCount} review${course.reviewCount === 1 ? '' : 's'})</span>
                             ${tagsHtml}
                         </div>
-                        <!-- Average Scores -->
+                        <!-- School Display and Average Scores -->
                         <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-300">
+                            ${schoolDisplay}
                             <span>Diff: <strong class="text-green-400">${course.avgDifficulty.toFixed(1)}</strong></span>
                             <span>Useful: <strong class="text-blue-400">${course.avgUsefulness.toFixed(1)}</strong></span>
                             <span>Work: <strong class="text-yellow-400">${course.avgWorkload.toFixed(1)}</strong></span>
@@ -1162,9 +1194,18 @@
 
             // --- 1. Load static course data first ---
             await loadCourseData();
+
+            // --- NEW: Populate School Filter and set up listener ---
+            populateSchoolFilter();
+            document.getElementById('school-filter').addEventListener('change', () => {
+                const currentSearch = document.getElementById('search-bar').value;
+                renderAllCourses(currentSearch);
+            });
+            // --- END NEW FILTER SETUP ---
+
             // Initial render with static data
-            renderAllCourses();
-            renderLeaderboard();
+            renderAllCourses(document.getElementById('search-bar').value); // Use current search (empty)
+            renderLeaderboard(document.getElementById('leaderboard-sort').value);
 
             // --- 2. Initialize Firebase & Auth ---
             try {
