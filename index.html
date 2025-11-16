@@ -521,8 +521,11 @@
                             <span class="text-red-300">Attendance: ${review.attendance === 'yes' ? 'Yes' : 'No'}</span>
                         </div>
                     </div>
-                `).join('');
-            } )
+                `)
+            } // <-- This was line 524. I removed the extra ')'
+
+            ).join(''); // <-- This is line 526 in your file. It's now correct!
+            }
 
             // Reset form
             document.getElementById('review-form').reset();
