@@ -43,7 +43,7 @@ QuACKER **simplifies this process**, making it faster and more reliable to resea
 
 Since QuACKER is hosted on GitHub Pages, you can access it directly:
 
-**URL:** `https://<your-username>.github.io/quacker`
+**URL:** `https://www.quacker.tech/`
 
 To run it locally:
 
