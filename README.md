@@ -1,77 +1,90 @@
-# Quacker
-Learn more about courses offered about RPI before taking them.
+# QuACKER
 
-### **Step 1: Testing the Application**
+**QuACKER** – *Questionably Accurate Course Knowledge, Evaluation, & Ratings*
 
-To test the full MERN stack, follow these steps:
+QuACKER is a lightweight, web-based platform that helps students explore, evaluate, and review courses. Instead of hunting for recommendations from peers, Reddit threads, or RateMyProfessor, QuACKER centralizes all the key course information in **one place**: easiness, usefulness, workload, attendance requirements, average grades, and anonymous reviews.
 
-1. **Backend**: Your backend server is running at `http://localhost:5000`. If you visit `http://localhost:5000/api/users` in your browser, you should see the list of users from MongoDB (if any exist).
-
-2. **Frontend**: Your React app is running at `http://localhost:3000`. When you open this in the browser, it should display the list of users fetched from the backend.
-
-3. **Add Users to MongoDB**: To see data on the frontend, you can either manually insert users into your MongoDB database or extend your backend to handle **POST** requests to add new users. Here’s an example of how you can add a route to create new users:
-
-   * **Create a POST route in `userRoutes.js`**:
-
-   ```javascript
-   // routes/userRoutes.js
-
-   const express = require('express');
-   const User = require('../models/userModel');
-   const router = express.Router();
-
-   // GET route
-   router.get('/', async (req, res) => {
-     try {
-       const users = await User.find();
-       res.json(users);
-     } catch (error) {
-       res.status(500).send('Server error');
-     }
-   });
-
-   // POST route to create a new user
-   router.post('/', async (req, res) => {
-     const { name, email } = req.body;
-     try {
-       const newUser = new User({ name, email });
-       await newUser.save();
-       res.status(201).json(newUser);
-     } catch (error) {
-       res.status(400).send('Error adding user');
-     }
-   });
-
-   module.exports = router;
-   ```
-
-   * **Update the frontend to create a user**. You can add a form in React to send POST requests to add users.
+QuACKER embodies the **Retro v Modern** theme: it’s inspired by the old-school ritual of asking classmates for advice, but built using **modern web tech and AI** for a fast, interactive experience.
 
 ---
 
-### **Step 2: Extend the Application (Optional)**
+## Features
 
-Here are some potential next steps for extending the MERN app:
-
-1. **Add CRUD functionality**: You can create routes for creating, updating, and deleting users in MongoDB.
-2. **Add user authentication**: Implement **JWT authentication** (JSON Web Tokens) to secure your API and create login/registration functionality.
-3. **Frontend improvements**: Add forms, validations, and improve the UI with libraries like **Material UI** or **Bootstrap**.
-4. **Deploy the application**: Once you are happy with the app, you can deploy it. For example, you can deploy:
-
-   * The backend on services like **Heroku**, **Render**, or **DigitalOcean**.
-   * The frontend on **Netlify** or **Vercel**.
-   * Use **MongoDB Atlas** for the database.
+* **Course Rankings:** Based on multiple metrics (Easiness, Usefulness, Workload, Attendance, Avg. Grade)
+* **Anonymous Reviews & Ratings:** Stored securely in Firebase
+* **Interactive Web Interface:** Fully built with HTML, CSS, and JavaScript
+* **Browser-Based:** No backend server required, hosted on GitHub Pages
+* **Search & Filter Courses:** Quickly find the best courses for your interests
 
 ---
 
-// GET route to fetch all users
-router.get('/', async (req, res) => {
-  try {
-    const users = await User.find(); // Fetch all users
-    res.status(200).json(users); // Respond with the user data
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+## Inspiration
 
-This route will fetch all users stored in the users collection and return them as a JSON response.
+Choosing courses is a pain point for students everywhere. Before QuACKER, students often:
+
+* Asked peers for advice
+* Scrolled through Reddit threads for tips
+* Checked RateMyProfessor for reviews
+
+QuACKER **simplifies this process**, making it faster and more reliable to research courses before registering. It captures the nostalgia of peer recommendations while leveraging **modern technology and AI** to present information clearly and efficiently.
+
+---
+
+## Tech Stack
+
+* **Frontend:** HTML, CSS, JavaScript
+* **Database:** Firebase (for storing anonymous reviews)
+* **AI Assistance:** Google Gemini (used to generate frontend code and Firebase integration)
+* **Hosting:** GitHub Pages
+
+---
+
+## Installation / Running Locally
+
+Since QuACKER is hosted on GitHub Pages, you can access it directly:
+
+**URL:** `https://<your-username>.github.io/quacker`
+
+To run it locally:
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/<your-username>/quacker.git
+cd quacker
+```
+
+2. Open `index.html` in your browser
+
+3. (Optional) Connect your own Firebase project for anonymous reviews
+
+---
+
+## Usage
+
+* Browse courses by department, professor, or semester
+* Check **Easiness, Usefulness, Workload, Attendance, and Avg. Grade** metrics
+* Submit anonymous ratings and reviews
+* Sort courses based on your preferred criteria
+
+---
+
+## Hack RPI Prize Submissions
+
+**Best .Tech Domain Name:**
+QuACKER takes the old-school idea of asking peers for course advice and modernizes it with a sleek web interface. A **.Tech domain name** would make QuACKER permanent and shareable, while **Blue Snowball mics** would help the team collaborate seamlessly to expand features and improve the platform.
+
+**Best Use of Gemini API:**
+QuACKER combines retro student wisdom with modern AI. Using **Google Gemini**, we generated the frontend and Firebase integration for **anonymous course reviews and rankings**, turning scattered student opinions into a single, interactive platform. Gemini allowed us to build a fully functional application over the hackathon weekend, bringing the past into the present.
+
+---
+
+## License
+
+This project is licensed under the **MIT License** – see [LICENSE](LICENSE) for details.
+
+---
+
+### Fun Fact
+
+The name **QuACKER** keeps the “questionably accurate” vibe of QuACS while letting students **quack about courses anonymously**! 🦆

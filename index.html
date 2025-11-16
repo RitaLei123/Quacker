@@ -237,7 +237,7 @@
                                 </label>
                             </div>
                         </div>
-                        <button typeD="submit" id="submit-review-btn" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:from-red-700 hover:to-red-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button type="submit" id="submit-review-btn" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:from-red-700 hover:to-red-600 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
                             Submit Review
                         </button>
                     </form>
@@ -360,7 +360,7 @@
             },
             {
                 "name": "Science",
-                "depts": ["ASTR", "BCBP", "BIOL", "CHEM", "CSCI", "ERTH", "ISCI", "MATH", "MATP", "PHYS"]
+                "depts": ["ASTR", "BCBP", "BIOL", "CHEM", "CSCI", "ERTH", "ISCI", "MATH", "MATP", "PHYS", "IENV"]
             },
             {
                 "name": "Management",
@@ -379,6 +379,28 @@
                 subjectToSchoolMap.set(dept, school.name);
             });
         });
+
+        // Course subject categories
+        const courseCategories = {
+            "humanities": ["ARTS", "LANG", "LITR", "PHIL", "WRIT", "GSAS", "INQR", "IHSS"],
+            "social_science": ["COGS", "COMM", "ECON", "GSAS", "IHSS", "PSYC", "STSO"],
+            "math": ["MATH", "MATP"],
+            "science": ["ASTR", "BCBP", "BIOL", "CHEM", "CSCI", "ERTH", "IENV", "ISCI", "PHYS"]
+        };
+
+        // Map subjects to their categories for easy lookup
+        const subjectToCategoryMap = new Map();
+        for (const category in courseCategories) {
+            for (const subj of courseCategories[category]) {
+                if (!subjectToCategoryMap.has(subj)) {
+                    subjectToCategoryMap.set(subj, []);
+                }
+                // Avoid duplicating 'GSAS', 'IHSS'
+                if (!subjectToCategoryMap.get(subj).includes(category)) {
+                    subjectToCategoryMap.get(subj).push(category);
+                }
+            }
+        }
 
 
         // --- CORE LOGIC ---
@@ -410,7 +432,7 @@
                 'A+': 4.0, 'A': 4.0, 'A-': 3.67,
                 'B+': 3.33, 'B': 3.0, 'B-': 2.67,
                 'C+': 2.33, 'C': 2.0, 'C-': 1.67,
-                'D+': 1.33, 'D': 1.0, 'F': 0.0
+                'D+': 1.33, 'D': 1.0, 'D-': 0.7, 'F': 0.0
             };
             return gpaMap[grade.toUpperCase()] ?? null;
         }
@@ -423,17 +445,18 @@
         function gpaToGrade(gpa) {
             if (gpa === null || isNaN(gpa)) return 'N/A';
             if (gpa >= 4.0) return 'A';
-            if (gpa >= 3.835) return 'A-'; // Midpoint between A (4.0) and A- (3.67)
-            if (gpa >= 3.5) return 'A-';   // Midpoint between A- (3.67) and B+ (3.33)
-            if (gpa >= 3.165) return 'B+';  // Midpoint between B+ (3.33) and B (3.0)
-            if (gpa >= 2.835) return 'B';
-            if (gpa >= 2.5) return 'B-';
-            if (gpa >= 2.165) return 'C+';
-            if (gpa >= 1.835) return 'C';
-            if (gpa >= 1.5) return 'C-';
-            if (gpa >= 1.165) return 'D+';
-            if (gpa >= 0.5) return 'D';
-            return 'F';
+            if (gpa > 3.835) return 'A';   // 4.0
+            if (gpa > 3.5) return 'A-';    // 3.67
+            if (gpa > 3.165) return 'B+';  // 3.33
+            if (gpa > 2.835) return 'B';   // 3.0
+            if (gpa > 2.5) return 'B-';    // 2.67
+            if (gpa > 2.165) return 'C+';  // 2.33
+            if (gpa > 1.835) return 'C';   // 2.0
+            if (gpa > 1.5) return 'C-';    // 1.67
+            if (gpa > 1.165) return 'D+';  // 1.33
+            if (gpa > 0.85) return 'D';     // 1.0
+            if (gpa > 0.35) return 'D-';    // 0.7
+            return 'F'; // 0.0
         }
 
 
@@ -494,6 +517,30 @@
                 }
             });
         }
+        
+        /**
+         * Generates the HTML for course tags.
+         * @param {object} course - The course object.
+         * @returns {string} HTML string for the tags.
+         */
+        function getCourseTagsHtml(course) {
+            let tagsHtml = '';
+            
+            // Combine Humanities and Social Science into HASS
+            if (course.categories.includes('humanities') || course.categories.includes('social_science')) {
+                tagsHtml += `<span class="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full ml-1">HASS</span>`;
+            }
+
+            // Generate other category tags
+            if (course.categories.includes('science')) {
+                tagsHtml += `<span class="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full ml-1">Science</span>`;
+            }
+            if (course.categories.includes('math')) {
+                tagsHtml += `<span class="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full ml-1">Math</span>`;
+            }
+            
+            return tagsHtml;
+        }
 
         /**
          * Renders the entire list of courses on the right side.
@@ -553,10 +600,9 @@
                         <span class="font-semibold text-white block truncate">${course.name}</span>
                         <span class="text-sm text-gray-400">${course.id}</span>
                         <!-- Tags -->
-                        ${course.school === 'Humanities, Arts, and Social Sciences' ? `
-                        <span class="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full ml-1">
-                            HASS
-                        </span>` : ''}
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            ${getCourseTagsHtml(course)}
+                        </div>
                         <!-- Average Scores -->
                         <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-300">
                             <span>Easiness: <strong class="text-green-400">${course.avgEasiness.toFixed(1)}</strong></span>
@@ -685,7 +731,7 @@
             document.getElementById('modal-course-hidden-id').value = course.id;
             
             // Populate official info
-            document.getElementById('modal-course-desc').textContent = course.desc || 'No description available.';
+            document.getElementById('modal-course-desc').textContent = course.description || 'No description available.';
             document.getElementById('modal-course-prereqs').textContent = course.prereqs || 'None listed.';
             document.getElementById('modal-course-offered').textContent = course.semesters.join(', ') || 'Not specified.';
 
@@ -735,7 +781,7 @@
             document.getElementById('l-modal-course-id').textContent = course.id;
             
             // Populate official info
-            document.getElementById('l-modal-course-desc').textContent = course.desc || 'No description available.';
+            document.getElementById('l-modal-course-desc').textContent = course.description || 'No description available.';
             document.getElementById('l-modal-course-prereqs').textContent = course.prereqs || 'None listed.';
             document.getElementById('l-modal-course-offered').textContent = course.semesters.join(', ') || 'Not specified.';
 
@@ -1067,10 +1113,11 @@
                         name: course.name,
                         subj: course.subj,
                         crse: course.crse,
-                        desc: course.desc || null,
+                        description: course.description || null,
                         semesters: ['Spring'],
                         school: subjectToSchoolMap.get(course.subj) || 'Uncategorized',
-                        prereqs: prereqGraph[id]?.prereqs.join(', ') || null,
+                        categories: subjectToCategoryMap.get(course.subj) || [],
+                        prereqs: prereqGraph[id]?.prereqs.join(', ') || 'None listed.',
                         reviews: []
                     });
                 }
@@ -1090,10 +1137,11 @@
                             name: course.name,
                             subj: course.subj,
                             crse: course.crse,
-                            desc: course.desc || null,
+                            description: course.description || null,
                             semesters: ['Fall'],
                             school: subjectToSchoolMap.get(course.subj) || 'Uncategorized',
-                            prereqs: prereqGraph[id]?.prereqs.join(', ') || null,
+                            categories: subjectToCategoryMap.get(course.subj) || [],
+                            prereqs: prereqGraph[id]?.prereqs.join(', ') || 'None listed.',
                             reviews: []
                         });
                     }
